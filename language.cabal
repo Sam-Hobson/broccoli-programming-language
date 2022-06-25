@@ -22,7 +22,7 @@ maintainer:         shhobson@proton.me
 extra-source-files: CHANGELOG.md
 
 library
-    exposed-modules:  MyLib
+    exposed-modules:  Parser
 
     -- Modules included in this library but not exported.
     -- other-modules:
