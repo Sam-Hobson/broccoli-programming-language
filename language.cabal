@@ -22,7 +22,9 @@ maintainer:         shhobson@proton.me
 extra-source-files: CHANGELOG.md
 
 library
-    exposed-modules:  Parser
+    exposed-modules:
+        Parser,
+        ParserFuncs
 
     -- Modules included in this library but not exported.
     -- other-modules:

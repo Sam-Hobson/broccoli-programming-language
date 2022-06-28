@@ -17,7 +17,7 @@ data ParseResult a
 newtype Parser a = P { parse :: String -> ParseResult a }
 
 instance Show a => Show (ParseResult a) where
-    show (Result a p) = "<Parsed: " ++ show a ++ "> <Remaining: " ++ p ++ ">"
+    show (Result a p) = "<Parsed: " ++ show a ++ "> <Remaining: \"" ++ p ++ "\">"
     show (Error UnexpectedEof) = "Unexpected EOF"
     show (Error (ExpectedEof s)) = "Expected EOF: " ++ show s
     show (Error (UnexpectedChar c)) = "Unexpected Char: " ++ show c
