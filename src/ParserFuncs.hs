@@ -253,3 +253,5 @@ noneof s = satisfy (`notElem` s)
 spaces2 :: Parser ()
 spaces2 = (is ' ' >> spaces2) ||| pure ()
 
+word :: Parser String
+word = list (alpha ||| digit)
