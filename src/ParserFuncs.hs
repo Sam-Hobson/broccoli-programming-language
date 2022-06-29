@@ -255,3 +255,25 @@ spaces2 = (is ' ' >> spaces2) ||| pure ()
 
 word :: Parser String
 word = list (alpha ||| digit)
+
+-- Parse a string if it exists, otherwise, parse nothing. This function
+-- wont produce any parseResult errors.
+maybeString :: String -> Parser String
+maybeString s = string s ||| string ""
+
+-- Reads an integer from input and converts the integer part to a number.
+readInt :: String -> Maybe (Integer, String)
+readInt s = case reads s of
+  [(x, rest)] -> Just (x, rest)
+  _ -> Nothing
+
+-- Parse an integer (including the -).
+integer :: Parser Integer
+integer = do
+  m <- maybeString "-"
+  maybeString "+"
+  num <- list digit
+  p $ readInt (m ++ num)
+  where
+    p (Just (x, _)) = pure x
+    p Nothing = P $ const $ Error UnexpectedEof

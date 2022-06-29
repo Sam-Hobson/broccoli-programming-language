@@ -66,6 +66,7 @@ assignmentToken = tok (is '=') >> Assignment <$> expr
 -- True
 varParser :: Parser Var
 varParser = do
+    spaces
     a <- idToken
     b <- typeIDToken
     Var a b <$> assignmentToken
