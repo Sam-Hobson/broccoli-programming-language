@@ -1,16 +1,16 @@
-module ExprLexer where
+module EquationLexer where
 
 import Parser
 import ParserFuncs
 
-data Expr
-  = Plus Expr Expr
-  | Minus Expr Expr
-  | Times Expr Expr
+data Equation
+  = Plus Equation Equation
+  | Minus Equation Equation
+  | Times Equation Equation
   | Number Integer
   deriving (Show)
 
-number :: Parser Expr
+number :: Parser Equation
 number = spaces2 >> Number <$> integer
 
 op :: Char -> Parser Char -- parse a single char operator
@@ -19,16 +19,16 @@ op c = do
   is c
   pure c
 
-times :: Parser (Expr -> Expr -> Expr)
+times :: Parser (Equation -> Equation -> Equation)
 times = op '*' >> pure Times
 
-add :: Parser (Expr -> Expr -> Expr)
+add :: Parser (Equation -> Equation -> Equation)
 add = (op '+' >> pure Plus) ||| (op '-' >> pure Minus)
 
-expr :: Parser Expr
-expr = chain term add
+equation :: Parser Equation
+equation = chain term add
 
-term :: Parser Expr
+term :: Parser Equation
 term = chain number times
 
 chain :: Parser a -> Parser (a -> a -> a) -> Parser a

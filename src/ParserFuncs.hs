@@ -196,13 +196,19 @@ charTok = tok . is
 commaTok :: Parser Char
 commaTok = charTok ','
 
--- >>> parse (stringTok "abc") "abc  "
--- <Parsed: "abc"> <Remaining: "">
---
--- >>> isError (parse (stringTok "abc") "bc  ")
--- True
-stringTok :: String -> Parser String
-stringTok = tok . string
+-- Parse any kind of data surrounded by strings.
+-- TODO: Examples
+surround :: String -> Parser a -> String -> Parser a
+surround s1 p s2 = do
+    string s1
+    r <- p
+    string s2
+    pure r
+
+-- Parse a string within a string.
+-- TODO: Examples
+innerString :: Parser String
+innerString = surround "\"" (list $ noneof "\"") "\""
 
 -- >>> parse (sepby1 character (is ',')) "a"
 -- <Parsed: "a"> <Remaining: "">
@@ -275,3 +281,8 @@ integer = do
   where
     p (Just (x, _)) = pure x
     p Nothing = P $ const $ Error UnexpectedEof
+
+
+-- Parses the character at the end of the line.
+endLine :: Parser Char
+endLine = is ';'
