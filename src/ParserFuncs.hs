@@ -1,5 +1,3 @@
-{-# LANGUAGE InstanceSigs #-}
-
 module ParserFuncs where
 
 import Data.Char

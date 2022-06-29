@@ -1,5 +1,3 @@
-{-# LANGUAGE InstanceSigs #-}
-
 module ExprLexer where
 
 import Parser

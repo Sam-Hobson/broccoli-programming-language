@@ -1,5 +1,3 @@
-{-# LANGUAGE InstanceSigs #-}
-
 module VarLexer where
 
 import ExprLexer
