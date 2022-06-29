@@ -1,22 +1,28 @@
 {-# LANGUAGE InstanceSigs #-}
 
-module VarLexer
-where
+module VarLexer where
 
+import ExprLexer
 import Parser
 import ParserFuncs
 
 -- Data types that can be parsed
-data Type =  PInt
-            | PString
-    deriving Show
+data Type
+  = PInt
+  | PString
+  deriving (Show)
 
 newtype Id = Id String
-    deriving Show
+  deriving (Show)
 
-data Op = TypeID
-        | Assignment
-    deriving Show
+newtype Assignment = Assignment Expr
+  deriving (Show)
+
+newtype TypeID = TypeID Type
+  deriving (Show)
+
+data Var = Var Id TypeID Assignment
+  deriving (Show)
 
 -- Parses the next word/id. This word can contain
 -- numbers but cannot start with one.
@@ -25,9 +31,9 @@ data Op = TypeID
 -- <Parsed: Id "var1"> <Remaining: ": int = 3">
 idToken :: Parser Id
 idToken = do
-    c <- alpha
-    rest <- tok word
-    pure $ Id $ c : rest
+  c <- alpha
+  rest <- tok word
+  pure $ Id $ c : rest
 
 -- Parses the datatype of a variable.
 --
@@ -35,8 +41,8 @@ idToken = do
 -- <Parsed: PInt> <Remaining: "= 3">
 typeToken :: Parser Type
 typeToken =
-    (tok (string "int") >> pure PInt) |||
-    (tok (string "string") >> pure PString)
+  (tok (string "int") >> pure PInt)
+    ||| (tok (string "string") >> pure PString)
 
 -- Parses an operation token.
 --
@@ -45,7 +51,21 @@ typeToken =
 --
 -- >>> parse opToken "= 3"
 -- <Parsed: Assignment> <Remaining: "3">
-opToken :: Parser Op
-opToken = 
-    (tok (is ':') >> pure TypeID) |||
-    (tok (is '=') >> pure Assignment)
+typeIDToken :: Parser TypeID
+typeIDToken = tok (is ':') >> TypeID <$> typeToken
+
+assignmentToken :: Parser Assignment
+assignmentToken = tok (is '=') >> Assignment <$> expr
+
+-- Parses a full variable.
+--
+-- >>> parse varParser "num1: int = 2"
+-- <Parsed: Var (Id "num1") (TypeID PInt) (Assignment (Number 2))> <Remaining: "">
+--
+-- >>> isError (parse varParser "num1: int = hi")
+-- True
+varParser :: Parser Var
+varParser = do
+    a <- idToken
+    b <- typeIDToken
+    Var a b <$> assignmentToken
