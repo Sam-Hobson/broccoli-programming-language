@@ -1,4 +1,4 @@
-module ParserFuncs where
+module BasicParserFuncs where
 
 import Data.Char
 import Parser
@@ -281,8 +281,3 @@ integer = do
   where
     p (Just (x, _)) = pure x
     p Nothing = P $ const $ Error UnexpectedEof
-
-
--- Parses the character at the end of the line.
-endLine :: Parser Char
-endLine = is ';'

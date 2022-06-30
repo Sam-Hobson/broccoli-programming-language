@@ -24,7 +24,8 @@ extra-source-files: CHANGELOG.md
 library
     exposed-modules:
         Parser,
-        ParserFuncs,
+        BasicParserFuncs,
+        SyntaxParserFuncs,
         VarLexer,
         EquationLexer
 

@@ -1,7 +1,7 @@
 module EquationLexer where
 
 import Parser
-import ParserFuncs
+import BasicParserFuncs
 
 data Equation
   = Plus Equation Equation
@@ -27,6 +27,7 @@ add = (op '+' >> pure Plus) ||| (op '-' >> pure Minus)
 
 equation :: Parser Equation
 equation = chain term add
+
 
 term :: Parser Equation
 term = chain number times
