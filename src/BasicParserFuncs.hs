@@ -200,9 +200,9 @@ commaTok = charTok ','
 -- TODO: Examples
 surround :: String -> Parser a -> String -> Parser a
 surround s1 p s2 = do
-    string s1
-    r <- p
-    string s2
+    tok $ string s1
+    r <- tok p
+    tok $ string s2
     pure r
 
 -- Parse a string within a string.

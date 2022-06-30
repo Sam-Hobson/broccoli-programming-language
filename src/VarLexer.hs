@@ -1,14 +1,14 @@
 module VarLexer where
 
-import Parser
 import BasicParserFuncs
-import SyntaxParserFuncs
 import ExprLexer
+import Parser
+import SyntaxParserFuncs
 
 data Var = Var {tokenId :: String, dataType :: Type, value :: Expr}
   deriving (Show)
 
--- Parses the assignment. This is everything including and beyond 
+-- Parses the assignment. This is everything including and beyond
 -- the equals sign.
 --
 -- >>> parse assignmentToken "= 1"
@@ -20,21 +20,29 @@ assignmentToken :: Parser Expr
 assignmentToken =
   tok (is '=') >> expr
 
--- Parses a full variable.
+-- Parses the declaration of a variable.
 --
--- >>> parse varParser "num1: int = 2;"
--- <Parsed: Var {tokenId = "num1", dataType = PInt, value = Equation (Number 2)}> <Remaining: "">
---
--- >>> isError (parse varParser "num1: int = hi;")
--- True
---
--- >>> parse varParser "num1: string = \"salad\";"
--- <Parsed: Var {tokenId = "num1", dataType = PString, value = String "salad"}> <Remaining: "">
-varParser :: Parser Var
-varParser = do
+-- >>> parse varDeclaration "x: int"
+-- <Parsed: Var {tokenId = "x", dataType = PInt, value = None}> <Remaining: "">
+varDeclaration :: Parser Var
+varDeclaration = do
   spaces
   a <- idToken
   b <- typeToken
-  c <- assignmentToken
-  endLine
-  pure $ Var a b c
+  pure $ Var a b None
+
+-- Parses a full variable.
+--
+-- >>> parse varInitialisation "num1: int = 2"
+-- <Parsed: Var {tokenId = "num1", dataType = PInt, value = Equation (Number 2)}> <Remaining: "">
+--
+-- >>> isError (parse varInitialisation "num1: int = hi")
+-- True
+--
+-- >>> parse varInitialisation "num1: string = \"salad\";"
+-- <Parsed: Var {tokenId = "num1", dataType = PString, value = String "salad"}> <Remaining: "">
+varInitialisation :: Parser Var
+varInitialisation = do
+  v <- varDeclaration
+  a <- assignmentToken
+  pure $ v {value = a}
