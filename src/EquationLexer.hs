@@ -20,7 +20,11 @@ add :: Parser (Equation -> Equation -> Equation)
 add = (op '+' >> pure Plus) ||| (op '-' >> pure Minus)
 
 equation :: Parser Equation
-equation = chain term add
+equation = do
+    res <- chain term add
+    case res of
+        Number n -> failed $ UnexpectedString (show n)
+        _ -> pure res
 
 
 term :: Parser Equation

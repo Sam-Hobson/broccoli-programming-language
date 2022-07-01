@@ -27,13 +27,11 @@ data Type
 
 type Var = (String, Type, Expr)
 
-type Function = (String, [Var], Type, Code)
+type Function = (String, [Var], Type, [Statement])
 
-data Code =
+data Statement =
     FD Function     |
     FC FunctionData |
     V Var           |
     Empty
     deriving (Show)
-
--- data CodeModule
