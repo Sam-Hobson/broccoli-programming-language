@@ -5,11 +5,11 @@ import BasicParserFuncs
 import ParseTypes ( Equation(..) )
 
 number :: Parser Equation
-number = spaces2 >> Number <$> integer
+number = whitespace >> Number <$> integer
 
 op :: Char -> Parser Char -- parse a single char operator
 op c = do
-  spaces2
+  whitespace
   is c
   pure c
 

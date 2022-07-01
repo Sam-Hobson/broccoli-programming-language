@@ -14,6 +14,7 @@ typeToken =
   tok (is ':')
     >> (tok (string "int") >> pure PInt)
     ||| (tok (string "string") >> pure PString)
+    ||| (tok (string "void") >> pure PVoid)
 
 -- Parses the next word/id. This word can contain
 -- numbers but cannot start with one.

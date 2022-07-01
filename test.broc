@@ -1,0 +1,8 @@
+var1: int = 3;
+var2: string = "salad";
+
+fun printSalad(s: string): void {
+    output(s);
+};
+as
+dasd

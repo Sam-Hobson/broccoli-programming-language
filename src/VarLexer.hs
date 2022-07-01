@@ -24,7 +24,7 @@ assignmentToken =
 -- <Parsed: Var {tokenId = "x", dataType = PInt, value = None}> <Remaining: "">
 varDeclaration :: Parser Var
 varDeclaration = do
-  spaces
+  whitespace
   a <- idToken
   b <- typeToken
   pure (a, b, None)

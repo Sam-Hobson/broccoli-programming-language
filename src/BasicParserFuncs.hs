@@ -2,6 +2,7 @@ module BasicParserFuncs where
 
 import Data.Char
 import Parser
+import IgnoredChars (ignoredChars)
 
 -- Return a parser that always fails with the given error.
 failed :: ParseError -> Parser a
@@ -94,6 +95,9 @@ space = satisfy isSpace
 spaces :: Parser String
 spaces = list (is ' ')
 
+whitespace :: Parser String
+whitespace = list $ oneof ignoredChars
+
 -- Return a parser that produces one or more space characters (consuming
 -- until the first non-space) but fails if:
 --
@@ -175,7 +179,7 @@ string = traverse is
 tok :: Parser a -> Parser a
 tok p = do
   a <- p
-  spaces
+  whitespace
   pure a
 
 -- A function that parses the given char followed by 0 or more spaces.

@@ -23,6 +23,7 @@ data Expr =
 data Type
   = PInt
   | PString
+  | PVoid
   deriving (Show)
 
 type Var = (String, Type, Expr)
