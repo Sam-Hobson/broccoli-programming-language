@@ -1,5 +1,6 @@
 var1: int = 3;
-var2: string = "salad";
+var2: int = var1 + 3;
+var3: string = "salad";
 
 fun printSalad(s: string): void {
     output(s);

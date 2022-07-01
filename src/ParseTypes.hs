@@ -6,6 +6,7 @@ data Equation
   | Minus   Equation Equation
   | Times   Equation Equation
   | Number  Integer
+  | Symbol1 String
   deriving (Show)
 
 type FunctionData = (String, Expr)
