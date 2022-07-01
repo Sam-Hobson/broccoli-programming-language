@@ -3,12 +3,7 @@ where
 
 import Parser
 import BasicParserFuncs
-
--- Data types that can be parsed
-data Type
-  = PInt
-  | PString
-  deriving (Show)
+import ParseTypes ( Type(..) )
 
 -- Parses the datatype of a variable.
 --

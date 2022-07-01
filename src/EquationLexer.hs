@@ -2,13 +2,7 @@ module EquationLexer where
 
 import Parser
 import BasicParserFuncs
-
-data Equation
-  = Plus Equation Equation
-  | Minus Equation Equation
-  | Times Equation Equation
-  | Number Integer
-  deriving (Show)
+import ParseTypes ( Equation(..) )
 
 number :: Parser Equation
 number = spaces2 >> Number <$> integer

@@ -1,12 +1,10 @@
 module VarLexer where
 
 import BasicParserFuncs
-import ExprLexer
+import ExprLexer ( expr )
 import Parser
-import SyntaxParserFuncs
-
-data Var = Var {tokenId :: String, dataType :: Type, value :: Expr}
-  deriving (Show)
+import SyntaxParserFuncs ( typeToken, idToken )
+import ParseTypes ( Var(..), Expr(..) )
 
 -- Parses the assignment. This is everything including and beyond
 -- the equals sign.
@@ -29,7 +27,10 @@ varDeclaration = do
   spaces
   a <- idToken
   b <- typeToken
-  pure $ Var a b None
+  pure (a, b, None)
+
+-- updateVarExpr :: Var -> Expr -> Var
+-- updateVarExpr (Var s t _) = Var s t
 
 -- Parses a full variable.
 --
@@ -43,6 +44,10 @@ varDeclaration = do
 -- <Parsed: Var {tokenId = "num1", dataType = PString, value = String "salad"}> <Remaining: "">
 varInitialisation :: Parser Var
 varInitialisation = do
-  v <- varDeclaration
-  a <- assignmentToken
-  pure $ v {value = a}
+  (a, b, _) <- varDeclaration
+  c <- assignmentToken
+  pure (a, b, c)
+  
+
+varParser :: Parser  Var
+varParser = varInitialisation ||| varDeclaration

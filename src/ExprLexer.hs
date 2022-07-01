@@ -1,29 +1,20 @@
-module ExprLexer
-where
+module ExprLexer where
 
-import EquationLexer (Equation, equation)
-import Parser
 import BasicParserFuncs
-import SyntaxParserFuncs
+import EquationLexer (equation)
+import ParseTypes (Expr (..), Code(..), FunctionData)
+import Parser
+import SyntaxParserFuncs (idToken)
 
-data Expr =
-    Constant Integer        |
-    Equation Equation       |
-    String String           |
-    Symbol String           |
-    SymbolCall String Expr  |
-    None
-    deriving (Show)
-
-symbolCall :: Parser Expr
-symbolCall = do
-    name <- idToken
-    content <- surround "(" (expr ||| pure None) ")"
-    pure $ SymbolCall name content
-
+functionCall :: Parser FunctionData
+functionCall = do
+  name <- idToken
+  content <- surround "(" (expr ||| pure None) ")"
+  pure (name, content)
 
 expr :: Parser Expr
-expr = (Equation <$> tok equation)      |||
-       (String <$> tok innerString)     |||
-       tok symbolCall  |||
-       (Symbol <$> tok idToken)
+expr =
+  (Equation <$> tok equation)
+    ||| (String <$> tok innerString)
+    ||| (SymbolCall <$> tok functionCall)
+    ||| (Symbol <$> tok idToken)
