@@ -13,8 +13,8 @@ symbol = Symbol1 <$> idToken
 
 op :: Char -> Parser Char -- parse a single char operator
 op c = do
-  whitespace
   is c
+  whitespace
   pure c
 
 times :: Parser (Equation -> Equation -> Equation)
