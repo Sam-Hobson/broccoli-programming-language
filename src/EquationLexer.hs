@@ -27,8 +27,9 @@ equation :: Parser Equation
 equation = do
     res <- chain term add
     case res of
-        Number n -> failed $ UnexpectedString (show n)
-        _ -> pure res
+        Number n    -> failed $ UnexpectedString (show n)
+        Symbol1 n   -> failed $ UnexpectedString (show n)
+        _           -> pure res
 
 term :: Parser Equation
 term = chain atomicEq times
