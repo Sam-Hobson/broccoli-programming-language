@@ -20,6 +20,16 @@
   (major1) == 4 && (major2) <  14 || \
   (major1) == 4 && (major2) == 14 && (minor) <= 3)
 #endif /* MIN_VERSION_base */
+/* package hashtables-1.3 */
+#ifndef VERSION_hashtables
+#define VERSION_hashtables "1.3"
+#endif /* VERSION_hashtables */
+#ifndef MIN_VERSION_hashtables
+#define MIN_VERSION_hashtables(major1,major2,minor) (\
+  (major1) <  1 || \
+  (major1) == 1 && (major2) <  3 || \
+  (major1) == 1 && (major2) == 3 && (minor) <= 0)
+#endif /* MIN_VERSION_hashtables */
 
 /* tool cpphs-1.20.9 */
 #ifndef TOOL_VERSION_cpphs

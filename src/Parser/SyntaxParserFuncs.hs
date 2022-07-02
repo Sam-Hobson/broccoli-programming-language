@@ -27,7 +27,3 @@ idToken = do
   rest <- tok word
   pure $ c : rest
 
--- Parses the character at the end of the line.
-endLine :: Parser Char
-endLine = is ';'
-
