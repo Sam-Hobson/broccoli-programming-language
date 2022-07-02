@@ -8,7 +8,7 @@ data Equation
   | Symbol1 String
   deriving (Show)
 
-type FunctionData = (String, Expr)
+type FunctionData = (String, [Expr])
 
 data Expr
   = Constant Integer

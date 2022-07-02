@@ -9,7 +9,7 @@ import SyntaxParserFuncs (idToken)
 functionCall :: Parser FunctionData
 functionCall = do
   name <- idToken
-  content <- surround "(" (expr ||| pure None) ")"
+  content <- surround "(" (sepby (expr ||| pure None) (is ',')) ")"
   pure (name, content)
 
 expr :: Parser Expr
