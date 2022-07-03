@@ -14,3 +14,10 @@ newtype InvalidEquationException
   deriving (Show, Typeable)
 
 instance Exception InvalidEquationException
+
+newtype MismatchedParameterException
+  = MismatchedParameterException String
+  deriving (Show, Typeable)
+
+instance Exception MismatchedParameterException
+

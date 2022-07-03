@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE FlexibleContexts #-}
 
 module Interpreter where
@@ -5,6 +6,8 @@ module Interpreter where
 -- import qualified Data.HashTable.IO as H
 
 import Control.Exception (throw)
+import Data.Data (Data (toConstr), Typeable)
+import Data.Map
 import Exceptions
 import qualified ModuleParser
 import qualified ParseTypes as P
@@ -13,41 +16,43 @@ data DataType
   = Int Integer
   | String String
   | Void
-  deriving (Show, Eq)
+  deriving (Show, Eq, Typeable, Data)
 
 instance Num DataType where
-    Int a + Int b = Int (a + b)
-    String a + String b = String (a ++ b)
-    _ + _ = throw $ InvalidEquationException "Cannot add datatype."
-    Int a - Int b = Int (a - b)
-    _ - _ = throw $ InvalidEquationException "Cannot subtract datatype."
-    Int a * Int b = Int (a * b)
-    _ * _ = throw $ InvalidEquationException "Cannot multiply datatype."
-    negate (Int a) = Int (negate a)
-    negate _ = throw $ InvalidEquationException "Cannot negate datatype."
-    abs (Int a) = Int (abs a)
-    abs _ = throw $ InvalidEquationException "Cannot abs datatype."
-    signum (Int a) = Int (signum a)
-    signum _ = throw $ InvalidEquationException "Cannot signum datatype."
-    fromInteger = undefined
+  Int a + Int b = Int (a + b)
+  String a + String b = String (a ++ b)
+  _ + _ = throw $ InvalidEquationException "Cannot add datatype."
+  Int a - Int b = Int (a - b)
+  _ - _ = throw $ InvalidEquationException "Cannot subtract datatype."
+  Int a * Int b = Int (a * b)
+  _ * _ = throw $ InvalidEquationException "Cannot multiply datatype."
+  negate (Int a) = Int (negate a)
+  negate _ = throw $ InvalidEquationException "Cannot negate datatype."
+  abs (Int a) = Int (abs a)
+  abs _ = throw $ InvalidEquationException "Cannot abs datatype."
+  signum (Int a) = Int (signum a)
+  signum _ = throw $ InvalidEquationException "Cannot signum datatype."
+  fromInteger = undefined
 
 type VarMap = [(String, DataType)]
 
-type FunData = ([DataType], DataType, [P.Statement])
+data FunData = FunData {argTypes :: [DataType], retType :: DataType, content :: [P.Statement]}
 
 type FunMap = [(String, FunData)]
 
-type DefinedData = (VarMap, FunMap)
+data DefinedData = DefinedData {vars :: VarMap, funs :: FunMap}
 
-type Namespace = String
+type Namespace = [String]
 
-type ScopedData = (Namespace, DefinedData)
+data ScopeData = ScopeData {encapsulating :: DefinedData, local :: DefinedData}
 
-global :: ScopedData
-global = ("global", ([], []))
+type StateData = (Namespace, ScopeData)
+
+global :: StateData
+global = (["global"], ScopeData DefinedData DefinedData)
 
 -- TODO: Incomplete
-interpret :: [P.Statement] -> (IO (), DataType)
+interpret :: StateData -> [P.Statement] -> (IO (), DefinedData, DataType)
 interpret = undefined
 
 -- TODO: Incomplete
@@ -78,21 +83,25 @@ lookupFun s d = case lookupLast s (snd $ snd d) of
 fst3 :: (a, b, c) -> a
 fst3 (a, _, _) = a
 
+sameConstructor :: (Data a1, Data a2) => a1 -> a2 -> Bool
+sameConstructor a b = toConstr a == toConstr b
+
 -- TODO: Incomplete
-evalExpr :: P.Expr -> ScopedData -> DataType
-evalExpr P.None _ = Void
-evalExpr (P.Constant i) _ = Int i
-evalExpr (P.String s) _ = String s
-evalExpr (P.Symbol s) d = lookupVar s d
-evalExpr (P.Equation e) d = evalEquation e d
+evalExpr :: P.Expr -> ScopedData -> (ScopedData, DataType)
+evalExpr P.None d = (d, Void)
+evalExpr (P.Constant i) d = (d, Int i)
+evalExpr (P.String s) d = (d, String s)
+evalExpr (P.Symbol s) d = (d, lookupVar s d)
+evalExpr (P.Equation e) d = (d, evalEquation e d)
 evalExpr (P.SymbolCall (n, c)) d = do
-    let fdata = lookupFun n d
-    let argTypes = fst3 fdata
-    -- let newData = map (
-    --     \(x, y) -> case (x, evalExpr y) of
-    --         (Int a, Int b)
-    -- ) (zip argTypes c)
-    undefined
+  let fdata = lookupFun n d
+  let argTypes = fst3 fdata
+  -- let newData = if length argTypes == length c then
+  --       foldr  d (zip argTypes c)
+  --       else d
+  undefined
+
+-- evalParameter :: (DataType, P.Expr) -> 
 
 evalEquation :: P.Equation -> ScopedData -> DataType
 evalEquation (P.Number i) _ = Int i
