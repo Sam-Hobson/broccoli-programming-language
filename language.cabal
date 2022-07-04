@@ -25,14 +25,15 @@ library
     exposed-modules:
         Parser,
         BasicParserFuncs,
-        ExprLexer,
         SyntaxParserFuncs,
+        ExprLexer,
         VarLexer,
-        EquationLexer,
         ParseTypes,
         ModuleParser,
         IgnoredChars,
-        Interpreter
+        Interpreter,
+        InterpreterTypes,
+        Exceptions
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -41,7 +42,9 @@ library
     -- other-extensions:
     build-depends:
         base ^>=4.14.3.0,
-        hashtables
+        hashtables,
+        containers,
+        data-constructors
     hs-source-dirs:   
         src/Parser/,
         src/Interpreter/

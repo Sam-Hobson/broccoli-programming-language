@@ -4,27 +4,26 @@ data Equation
   = Plus Equation Equation
   | Minus Equation Equation
   | Times Equation Equation
-  | Number Integer
-  | Symbol1 String
-  deriving (Show)
+  | E Expr
+  deriving (Show, Eq)
 
 type FunctionData = (String, [Expr])
 
 data Expr
-  = Constant Integer
+  = Number Integer
   | Equation Equation
   | String String
   | Symbol String
   | SymbolCall FunctionData
   | None
-  deriving (Show)
+  deriving (Show, Eq)
 
 -- Data types that can be parsed
 data Type
   = PInt
   | PString
   | PVoid
-  deriving (Show)
+  deriving (Show, Eq)
 
 type Var = (String, Type, Expr)
 
@@ -35,4 +34,4 @@ data Statement
   | FC FunctionData
   | V Var
   | Empty
-  deriving (Show)
+  deriving (Show, Eq)

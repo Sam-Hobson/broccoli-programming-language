@@ -10,7 +10,7 @@ fun printSalad(s: string): void {
         return(x1 + x);
     };
 
-    output(sayHi(s));
+    output(sayHi());
 };
 as
 dasd

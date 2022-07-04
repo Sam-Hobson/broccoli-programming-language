@@ -20,6 +20,26 @@
   (major1) == 4 && (major2) <  14 || \
   (major1) == 4 && (major2) == 14 && (minor) <= 3)
 #endif /* MIN_VERSION_base */
+/* package containers-0.6.5.1 */
+#ifndef VERSION_containers
+#define VERSION_containers "0.6.5.1"
+#endif /* VERSION_containers */
+#ifndef MIN_VERSION_containers
+#define MIN_VERSION_containers(major1,major2,minor) (\
+  (major1) <  0 || \
+  (major1) == 0 && (major2) <  6 || \
+  (major1) == 0 && (major2) == 6 && (minor) <= 5)
+#endif /* MIN_VERSION_containers */
+/* package data-constructors-0.1.0.0 */
+#ifndef VERSION_data_constructors
+#define VERSION_data_constructors "0.1.0.0"
+#endif /* VERSION_data_constructors */
+#ifndef MIN_VERSION_data_constructors
+#define MIN_VERSION_data_constructors(major1,major2,minor) (\
+  (major1) <  0 || \
+  (major1) == 0 && (major2) <  1 || \
+  (major1) == 0 && (major2) == 1 && (minor) <= 0)
+#endif /* MIN_VERSION_data_constructors */
 /* package hashtables-1.3 */
 #ifndef VERSION_hashtables
 #define VERSION_hashtables "1.3"

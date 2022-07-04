@@ -1,58 +1,30 @@
-{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE FlexibleContexts #-}
 
 module Interpreter where
 
--- import qualified Data.HashTable.IO as H
-
 import Control.Exception (throw)
-import Data.Data (Data (toConstr), Typeable)
-import Data.Map
+import Control.Applicative ((<|>))
+import Data.Map (Map)
+import Data.List (isPrefixOf)
+import qualified Data.Map as Map
+import Data.Constructors.TH ( EqC(eqConstr) )
+
+import InterpreterTypes
 import Exceptions
 import qualified ModuleParser
 import qualified ParseTypes as P
 
-data DataType
-  = Int Integer
-  | String String
-  | Void
-  deriving (Show, Eq, Typeable, Data)
+concatDefinedData :: DefinedData -> DefinedData -> DefinedData
+concatDefinedData a b = DefinedData (Map.union (vars a) (vars b)) (Map.union (funs a) (funs b))
 
-instance Num DataType where
-  Int a + Int b = Int (a + b)
-  String a + String b = String (a ++ b)
-  _ + _ = throw $ InvalidEquationException "Cannot add datatype."
-  Int a - Int b = Int (a - b)
-  _ - _ = throw $ InvalidEquationException "Cannot subtract datatype."
-  Int a * Int b = Int (a * b)
-  _ * _ = throw $ InvalidEquationException "Cannot multiply datatype."
-  negate (Int a) = Int (negate a)
-  negate _ = throw $ InvalidEquationException "Cannot negate datatype."
-  abs (Int a) = Int (abs a)
-  abs _ = throw $ InvalidEquationException "Cannot abs datatype."
-  signum (Int a) = Int (signum a)
-  signum _ = throw $ InvalidEquationException "Cannot signum datatype."
-  fromInteger = undefined
+emptyData :: DefinedData
+emptyData = DefinedData Map.empty Map.empty
 
-type VarMap = [(String, DataType)]
-
-data FunData = FunData {argTypes :: [DataType], retType :: DataType, content :: [P.Statement]}
-
-type FunMap = [(String, FunData)]
-
-data DefinedData = DefinedData {vars :: VarMap, funs :: FunMap}
-
-type Namespace = [String]
-
-data ScopeData = ScopeData {encapsulating :: DefinedData, local :: DefinedData}
-
-type StateData = (Namespace, ScopeData)
-
-global :: StateData
-global = (["global"], ScopeData DefinedData DefinedData)
+global :: ScopeData
+global = ScopeData "global" emptyData NoData
 
 -- TODO: Incomplete
-interpret :: StateData -> [P.Statement] -> (IO (), DefinedData, DataType)
+interpret :: ScopeData -> [P.Statement] -> (IO (), ScopeData, DataType)
 interpret = undefined
 
 -- TODO: Incomplete
@@ -62,55 +34,86 @@ statementIn (P.FC s) = undefined
 statementIn (P.V (a, b, c)) = undefined
 statementIn P.Empty = undefined
 
-lookupLast :: Eq a => a -> [(a, b)] -> Maybe b
-lookupLast a l = ll' a l Nothing
-  where
-    ll' b [] r = r
-    ll' b ((c, d) : xs) r
-      | b == c = ll' b xs (Just d)
-      | otherwise = ll' b xs r
+scopedLookup :: (DefinedData -> Map String a) -> String -> ScopeData -> a
+scopedLookup f s sd = sl sd Nothing
+    where
+        sl NoData Nothing   = throw $ UnboundSymbolException $ "Symbol: " ++ s ++ " not bound."
+        sl NoData (Just a)  = a
+        sl sd' a            = sl (innerScope sd') (Map.lookup s (f $ defData sd') <|> a)
 
-lookupVar :: String -> ScopedData -> DataType
-lookupVar s d = case lookupLast s (fst $ snd d) of
-  Just dt -> dt
-  Nothing -> throw $ UnboundSymbolException $ "Symbol: " ++ s ++ " not bound."
+varLookup :: String -> ScopeData -> DataType
+varLookup = scopedLookup vars
 
-lookupFun :: String -> ScopedData -> FunData
-lookupFun s d = case lookupLast s (snd $ snd d) of
-  Just dt -> dt
-  Nothing -> throw $ UnboundSymbolException $ "Symbol: " ++ s ++ " not bound."
+funLookup :: String -> ScopeData -> FunData
+funLookup = scopedLookup funs
+
+evalFunArgs :: FunData -> ScopeData -> [P.Expr] -> (ScopeData, [DataType])
+evalFunArgs fd sd e =
+  foldl
+    ( \(sd', types) (expectedType, e') -> do
+        let r = evalExpr e' sd'
+        if not $ eqConstr expectedType (trd3 r)
+          then throw $ MismatchedParameterException $ "Incorrect parameter types for: " ++ show (funNs fd) ++ " given."
+          else (snd3 r, types ++ [trd3 r])
+    )
+    (sd, [])
+    (zip (argTypes fd) e)
+
+traceScope :: ScopeData -> Namespace
+traceScope s = scope s : case innerScope s of
+                            NoData  -> []
+                            _       -> traceScope (innerScope s)
+
+calcFunScope :: ScopeData -> FunData -> ScopeData
+calcFunScope s f = cfs s (funNs f)
+    where
+        cfs s' (x:y:zs)
+            | scope s' /= x = throw $ UnboundSymbolException $ "Function: " ++ show (funNs f) ++ " not found."
+            | null zs = s' {innerScope = ScopeData y emptyData NoData}
+            | otherwise = s' {innerScope = cfs (innerScope s') (y:zs)}
+        cfs _ _ = throw $ ScopeException $ "Function: " ++ show (funNs f) ++ " not in scope."
+
+mergeScopeData :: ScopeData -> ScopeData -> ScopeData
+mergeScopeData a b
+    | scope a /= scope b = throw $ ScopeException $ "Function returned with invalid scope: " ++ show (traceScope a)
+    | innerScope a /= NoData = a {innerScope = mergeScopeData (innerScope a) (innerScope b)}
+    | innerScope a == NoData = a {innerScope = innerScope b}
+    | otherwise = throw $ ScopeException $ "Function returned with invalid scope: " ++ show (traceScope a)
 
 fst3 :: (a, b, c) -> a
 fst3 (a, _, _) = a
 
-sameConstructor :: (Data a1, Data a2) => a1 -> a2 -> Bool
-sameConstructor a b = toConstr a == toConstr b
+snd3 :: (a, b, c) -> b
+snd3 (_, b, _) = b
+
+trd3 :: (a, b, c) -> c
+trd3 (_, _, c) = c
 
 -- TODO: Incomplete
-evalExpr :: P.Expr -> ScopedData -> (ScopedData, DataType)
-evalExpr P.None d = (d, Void)
-evalExpr (P.Constant i) d = (d, Int i)
-evalExpr (P.String s) d = (d, String s)
-evalExpr (P.Symbol s) d = (d, lookupVar s d)
-evalExpr (P.Equation e) d = (d, evalEquation e d)
-evalExpr (P.SymbolCall (n, c)) d = do
-  let fdata = lookupFun n d
-  let argTypes = fst3 fdata
-  -- let newData = if length argTypes == length c then
-  --       foldr  d (zip argTypes c)
-  --       else d
-  undefined
+evalExpr :: P.Expr -> ScopeData -> (IO (), ScopeData, DataType)
+evalExpr P.None d                   = (pure (), d, Void)
+evalExpr (P.Number i) d             = (pure (), d, Int i)
+evalExpr (P.String s) d             = (pure (), d, String s)
+evalExpr (P.Symbol s) d             = (pure (), d, varLookup s d)
+evalExpr (P.Equation e) d           = evalEquation e d
+evalExpr (P.SymbolCall (n, c)) d    = do
+  let fdata = funLookup n d
+  let (d', args) = evalFunArgs fdata d c
+  let d'' = calcFunScope d' fdata
+  let callResults = interpret d'' (content fdata)
+  (fst3 callResults, mergeScopeData (snd3 callResults) d'', trd3 callResults)
 
--- evalParameter :: (DataType, P.Expr) -> 
-
-evalEquation :: P.Equation -> ScopedData -> DataType
-evalEquation (P.Number i) _ = Int i
-evalEquation (P.Symbol1 s) d = lookupVar s d
-evalEquation (P.Plus e1 e2) d = evalEquation e1 d + evalEquation e2 d
-evalEquation (P.Minus e1 e2) d = evalEquation e1 d - evalEquation e2 d
-evalEquation (P.Times e1 e2) d = evalEquation e1 d * evalEquation e2 d
-
--- TODO: Incomplete
-compTypeVal :: DataType -> P.Expr -> Bool
-compTypeVal (Int _) (P.Constant _) = True
-compTypeVal _ _ = False
+evalEquation :: P.Equation -> ScopeData -> (IO (), ScopeData, DataType)
+evalEquation (P.E e) d = evalExpr e d
+evalEquation (P.Plus e1 e2) d = do
+  let r1 = evalEquation e1 d
+  let r2 = evalEquation e2 (snd3 r1)
+  (pure (), snd3 r2, trd3 r1 + trd3 r2)
+evalEquation (P.Minus e1 e2) d = do
+  let r1 = evalEquation e1 d
+  let r2 = evalEquation e2 (snd3 r1)
+  (pure (), snd3 r2, trd3 r1 - trd3 r2)
+evalEquation (P.Times e1 e2) d = do
+  let r1 = evalEquation e1 d
+  let r2 = evalEquation e2 (snd3 r1)
+  (pure (), snd3 r2, trd3 r1 * trd3 r2)

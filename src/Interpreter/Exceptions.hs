@@ -9,6 +9,12 @@ newtype UnboundSymbolException
 
 instance Exception UnboundSymbolException
 
+newtype ScopeException
+  = ScopeException String
+  deriving (Show, Typeable)
+
+instance Exception ScopeException
+
 newtype InvalidEquationException
   = InvalidEquationException String
   deriving (Show, Typeable)

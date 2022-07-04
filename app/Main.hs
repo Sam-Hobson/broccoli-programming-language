@@ -10,11 +10,10 @@ formatParse1 n =
   mconcat
     . map
       ( \x -> case x of
-          FD (a, b, c, d) -> 
-            replicate n '\t' ++ "FD ("
-                ++ show a ++ ", " ++ show b ++ ", " ++ show c 
-                ++ ",\n" ++ formatParse1 (n + 1) d
-            ++ replicate n '\t' ++ ")\n"
+          FD (a, b, c, d) ->
+            replicate n '\t' ++ show (a, b, c)
+                ++ " {\n" ++ formatParse1 (n + 1) d
+            ++ replicate n '\t' ++ "}\n"
 
           _ -> replicate n '\t' ++ show x ++ "\n"
       )
@@ -37,7 +36,7 @@ main = do
 
   case getParsed parsedContent of
     Left a -> putStr $ "Error: " ++ show a
-    Right a -> putStr $ formatParse a
+    Right a -> putStr $ show a
 
   putStr $ sep ++ "REMAINING CONTENT" ++ sep
 

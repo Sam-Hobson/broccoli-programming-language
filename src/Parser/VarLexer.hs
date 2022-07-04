@@ -4,7 +4,7 @@ import BasicParserFuncs
 import ExprLexer ( expr )
 import Parser
 import SyntaxParserFuncs ( typeToken, idToken )
-import ParseTypes ( Var(..), Expr(..) )
+import ParseTypes ( Var(..), Expr(..))
 
 -- Parses the assignment. This is everything including and beyond
 -- the equals sign.
