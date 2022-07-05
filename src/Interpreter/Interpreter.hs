@@ -19,7 +19,7 @@ interpret :: ScopeData -> [P.Statement] -> (IO (), ScopeData, DataType)
 interpret sd = foldl
     (\(io, sd', rt) s -> do
         let (io', sd'', rt') = statementIn sd' s
-        trace (show (sd', rt)) (mconcat [io, io'], sd'', fromMaybe rt rt')
+        trace (show (sd', rt) ++ "\n") (mconcat [io, io'], sd'', fromMaybe rt rt')
     )
     (pure (), sd, Void)
 
@@ -31,19 +31,24 @@ statementIn sd (P.V v)      = addLast (declareVar sd v) Nothing
 statementIn sd P.Empty      = (pure (), sd, Nothing)
 statementIn sd (P.Ret r)    = Just <$> evalExpr r sd
 
+addVar :: ScopeData -> (String, DataType) -> ScopeData
+addVar sd (k, v) = do
+    let dd = defData sd
+    sd {defData = dd {vars = Map.insert k v (vars dd)}}
+
+addFun :: ScopeData -> (String, FunData) -> ScopeData
+addFun sd (k, v) = do
+    let dd = defData sd
+    sd {defData = dd {funs = Map.insert k v (funs dd)}}
+
 declareVar :: ScopeData -> P.Var -> (IO (), ScopeData)
 declareVar sd (a, b, c) = do
     let (io, sd', dt) = evalExpr c sd
-    let dd = defData sd'
-    let sd'' = sd' {defData = dd {vars = Map.insert a dt (vars dd)}}
+    let sd'' = addVar sd' (a, dt)
     (io, sd'')
 
 declareFun :: ScopeData -> P.Function -> ScopeData
-declareFun sd (a, b, c, d) = sd {defData = dd {funs = Map.insert k v (funs dd)}}
-  where
-    dd = defData sd
-    k = a
-    v = FunData (traceScope sd ++ [a]) (argDefinition <$> b) (mapPTypes c) d
+declareFun sd (a, b, c, d) = addFun sd (a, FunData (traceScope sd ++ [a]) (argDefinition <$> b) (mapPTypes c) d)
 
 argDefinition :: P.Var -> (String, DataType)
 argDefinition (s, t, e) = (s, f $ evalPrimitiveExpr e)
@@ -57,17 +62,17 @@ evalPrimitiveExpr (P.Number i) = Int $ Just i
 evalPrimitiveExpr (P.String s) = String $ Just s
 evalPrimitiveExpr a = throw $ ExpectedPrimitiveTypeException $ "Expected primitive type. " ++ show a ++ " provided instead."
 
-evalFunArgs :: FunData -> ScopeData -> [P.Expr] -> (ScopeData, [DataType])
+evalFunArgs :: FunData -> ScopeData -> [P.Expr] -> (ScopeData, [(String, DataType)])
 evalFunArgs fd sd e =
   foldl
-    ( \(sd', types) (expectedType, e') -> do
+    ( \(sd', types) ((varname, expectedType), e') -> do
         let r = evalExpr e' sd'
         if not $ eqConstr expectedType (trd3 r)
           then throw $ MismatchedParameterException $ "Incorrect parameter types for: " ++ show (funNs fd) ++ " given."
-          else (snd3 r, types ++ [trd3 r])
+          else (snd3 r, types ++ [(varname, trd3 r)])
     )
     (sd, [])
-    (zip (snd <$> args fd) e)
+    (zip (args fd) e)
 
 calcFunScope :: ScopeData -> FunData -> ScopeData
 calcFunScope s f = cfs s (funNs f)
@@ -86,8 +91,9 @@ evalExpr (P.SymbolCall (n, c)) d = do
   let fdata = funLookup n d
   let (d', args) = evalFunArgs fdata d c
   let d'' = calcFunScope d' fdata
-  let callResults = interpret d'' (content fdata)
-  (fst3 callResults, mergeScopeData (snd3 callResults) d'', trd3 callResults)
+  let d''' = foldl addVar d'' args
+  let callResults = interpret d''' (content fdata)
+  (fst3 callResults, mergeScopeData (snd3 callResults) d''', trd3 callResults)
 evalExpr e d = (pure (), d, evalPrimitiveExpr e)
 
 evalEquation :: P.Equation -> ScopeData -> (IO (), ScopeData, DataType)

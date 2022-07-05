@@ -3,14 +3,12 @@ var2: int = var1 + 3;
 var3: string = "salad";
 
 fun printSalad(s: string): void {
-    output(s);
-
     fun sayHi(x: string): string {
         x1: string = "Hello, ";
         return x1 + x;
     };
 
-    output(sayHi());
+    sayHi("" + var3);
 };
-as
-dasd
+
+printSalad(var3);

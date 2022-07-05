@@ -54,5 +54,5 @@ data DefinedData = DefinedData {vars :: VarMap, funs :: FunMap}
 
 data ScopeData
     = ScopeData {scope :: Name, defData :: DefinedData, innerScope :: ScopeData}
-    | NoData
+    | NoScope
   deriving (Show, Eq)

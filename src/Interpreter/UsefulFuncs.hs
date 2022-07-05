@@ -13,9 +13,6 @@ import qualified ParseTypes as P
 emptyData :: DefinedData
 emptyData = DefinedData Map.empty Map.empty
 
-global :: ScopeData
-global = ScopeData "global" emptyData NoData
-
 fst3 :: (a, b, c) -> a
 fst3 (a, _, _) = a
 
@@ -30,7 +27,7 @@ addLast (a, b) c = (a, b, c)
 
 traceScope :: ScopeData -> Namespace
 traceScope s = scope s : case innerScope s of
-                            NoData  -> []
+                            NoScope  -> []
                             _       -> traceScope (innerScope s)
 
 -- Takes 2 ScopeData objects and merges their data.
@@ -39,8 +36,8 @@ traceScope s = scope s : case innerScope s of
 mergeScopeData :: ScopeData -> ScopeData -> ScopeData
 mergeScopeData a b
     | scope a /= scope b = throw $ ScopeException $ "Function returned with invalid scope: " ++ show (traceScope a)
-    | innerScope a /= NoData = a {innerScope = mergeScopeData (innerScope a) (innerScope b)}
-    | innerScope a == NoData = a {innerScope = innerScope b}
+    | innerScope a /= NoScope = a {innerScope = mergeScopeData (innerScope a) (innerScope b)}
+    | innerScope a == NoScope = a {innerScope = innerScope b}
     | otherwise = throw $ ScopeException $ "Function returned with invalid scope: " ++ show (traceScope a)
 
 
@@ -52,8 +49,8 @@ mapPTypes P.PVoid = Void
 scopedLookup :: (DefinedData -> Map String a) -> String -> ScopeData -> a
 scopedLookup f s sd = sl sd Nothing
     where
-        sl NoData Nothing   = throw $ UnboundSymbolException $ "Symbol: " ++ s ++ " not bound."
-        sl NoData (Just a)  = a
+        sl NoScope Nothing   = throw $ UnboundSymbolException $ "Symbol: " ++ s ++ " not bound."
+        sl NoScope (Just a)  = a
         sl sd' a            = sl (innerScope sd') (Map.lookup s (f $ defData sd') <|> a)
 
 varLookup :: String -> ScopeData -> DataType

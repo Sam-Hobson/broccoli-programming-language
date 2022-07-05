@@ -5,7 +5,7 @@ import ModuleParser (codeModule)
 import ParseTypes (Statement (..))
 import Parser
 import System.Environment (getArgs)
-import UsefulFuncs (global)
+import GlobalScope
 
 formatParse1 :: Int -> [Statement] -> String
 formatParse1 n =
@@ -40,7 +40,7 @@ main = do
   case getParsed parsedContent of
     Left a -> putStr $ "Error: " ++ show a
     Right a -> do
-        putStr $ show a
+        putStr $ concatMap ((++"\n") . show) a
         putStr $ sep ++ "INTERPRETED" ++ sep
         let (io, _, _) = interpret global a
         io
