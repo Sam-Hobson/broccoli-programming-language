@@ -27,3 +27,9 @@ newtype MismatchedParameterException
 
 instance Exception MismatchedParameterException
 
+newtype ExpectedPrimitiveTypeException
+  = ExpectedPrimitiveTypeException String
+  deriving (Show, Typeable)
+
+instance Exception ExpectedPrimitiveTypeException
+

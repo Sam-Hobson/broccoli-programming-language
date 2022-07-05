@@ -13,9 +13,7 @@ import InterpreterTypes
 import Exceptions
 import qualified ModuleParser
 import qualified ParseTypes as P
-
-concatDefinedData :: DefinedData -> DefinedData -> DefinedData
-concatDefinedData a b = DefinedData (Map.union (vars a) (vars b)) (Map.union (funs a) (funs b))
+import UsefulFuncs
 
 emptyData :: DefinedData
 emptyData = DefinedData Map.empty Map.empty
@@ -28,11 +26,29 @@ interpret :: ScopeData -> [P.Statement] -> (IO (), ScopeData, DataType)
 interpret = undefined
 
 -- TODO: Incomplete
-statementIn :: P.Statement -> IO ()
-statementIn (P.FD s) = undefined
-statementIn (P.FC s) = undefined
-statementIn (P.V (a, b, c)) = undefined
-statementIn P.Empty = undefined
+statementIn :: ScopeData -> P.Statement -> (IO (), ScopeData)
+statementIn sd (P.FD s) = (pure (), declareFun sd s)
+statementIn sd (P.FC s) = undefined
+statementIn sd (P.V (a, b, c)) = undefined
+statementIn sd P.Empty = undefined
+
+declareFun :: ScopeData -> P.Function -> ScopeData
+declareFun sd (a, b, c, d) = sd{defData = dd{funs = Map.insert k v (funs dd)}}
+    where
+        dd = defData sd
+        k = a
+        v = FunData (traceScope sd ++ [a]) (argDefinition <$> b) (mapPTypes c) d
+
+argDefinition :: P.Var -> (String, DataType)
+argDefinition (s, t, e) = (s, f $ evalPrimitiveExpr e)
+    where
+        f Void  = mapPTypes t
+        f a     = a
+
+mapPTypes :: P.Type -> DataType
+mapPTypes P.PInt = Int Nothing
+mapPTypes P.PString = String Nothing
+mapPTypes P.PVoid = Void
 
 scopedLookup :: (DefinedData -> Map String a) -> String -> ScopeData -> a
 scopedLookup f s sd = sl sd Nothing
@@ -57,12 +73,7 @@ evalFunArgs fd sd e =
           else (snd3 r, types ++ [trd3 r])
     )
     (sd, [])
-    (zip (argTypes fd) e)
-
-traceScope :: ScopeData -> Namespace
-traceScope s = scope s : case innerScope s of
-                            NoData  -> []
-                            _       -> traceScope (innerScope s)
+    (zip (snd <$> args fd) e)
 
 calcFunScope :: ScopeData -> FunData -> ScopeData
 calcFunScope s f = cfs s (funNs f)
@@ -73,27 +84,14 @@ calcFunScope s f = cfs s (funNs f)
             | otherwise = s' {innerScope = cfs (innerScope s') (y:zs)}
         cfs _ _ = throw $ ScopeException $ "Function: " ++ show (funNs f) ++ " not in scope."
 
-mergeScopeData :: ScopeData -> ScopeData -> ScopeData
-mergeScopeData a b
-    | scope a /= scope b = throw $ ScopeException $ "Function returned with invalid scope: " ++ show (traceScope a)
-    | innerScope a /= NoData = a {innerScope = mergeScopeData (innerScope a) (innerScope b)}
-    | innerScope a == NoData = a {innerScope = innerScope b}
-    | otherwise = throw $ ScopeException $ "Function returned with invalid scope: " ++ show (traceScope a)
-
-fst3 :: (a, b, c) -> a
-fst3 (a, _, _) = a
-
-snd3 :: (a, b, c) -> b
-snd3 (_, b, _) = b
-
-trd3 :: (a, b, c) -> c
-trd3 (_, _, c) = c
+evalPrimitiveExpr :: P.Expr -> DataType
+evalPrimitiveExpr P.None        = Void
+evalPrimitiveExpr (P.Number i)  = Int $ Just i
+evalPrimitiveExpr (P.String s)  = String $ Just s
+evalPrimitiveExpr a             = throw $ ExpectedPrimitiveTypeException $ "Expected primitive type. " ++ show a ++ " provided instead."
 
 -- TODO: Incomplete
 evalExpr :: P.Expr -> ScopeData -> (IO (), ScopeData, DataType)
-evalExpr P.None d                   = (pure (), d, Void)
-evalExpr (P.Number i) d             = (pure (), d, Int i)
-evalExpr (P.String s) d             = (pure (), d, String s)
 evalExpr (P.Symbol s) d             = (pure (), d, varLookup s d)
 evalExpr (P.Equation e) d           = evalEquation e d
 evalExpr (P.SymbolCall (n, c)) d    = do
@@ -102,6 +100,7 @@ evalExpr (P.SymbolCall (n, c)) d    = do
   let d'' = calcFunScope d' fdata
   let callResults = interpret d'' (content fdata)
   (fst3 callResults, mergeScopeData (snd3 callResults) d'', trd3 callResults)
+evalExpr e d                        = (pure (), d, evalPrimitiveExpr e)
 
 evalEquation :: P.Equation -> ScopeData -> (IO (), ScopeData, DataType)
 evalEquation (P.E e) d = evalExpr e d
