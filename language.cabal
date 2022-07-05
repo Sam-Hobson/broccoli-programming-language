@@ -33,7 +33,8 @@ library
         IgnoredChars,
         Interpreter,
         InterpreterTypes,
-        Exceptions
+        Exceptions,
+        UsefulFuncs
 
     -- Modules included in this library but not exported.
     -- other-modules:

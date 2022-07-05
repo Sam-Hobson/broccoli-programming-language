@@ -1,9 +1,20 @@
 module UsefulFuncs
 where
 
+import Data.Map (Map)
+import qualified Data.Map as Map
+import Control.Applicative ((<|>))
+
 import InterpreterTypes
 import Exceptions
 import Control.Exception (throw)
+import qualified ParseTypes as P
+
+emptyData :: DefinedData
+emptyData = DefinedData Map.empty Map.empty
+
+global :: ScopeData
+global = ScopeData "global" emptyData NoData
 
 fst3 :: (a, b, c) -> a
 fst3 (a, _, _) = a
@@ -28,4 +39,23 @@ mergeScopeData a b
     | innerScope a /= NoData = a {innerScope = mergeScopeData (innerScope a) (innerScope b)}
     | innerScope a == NoData = a {innerScope = innerScope b}
     | otherwise = throw $ ScopeException $ "Function returned with invalid scope: " ++ show (traceScope a)
+
+
+mapPTypes :: P.Type -> DataType
+mapPTypes P.PInt = Int Nothing
+mapPTypes P.PString = String Nothing
+mapPTypes P.PVoid = Void
+
+scopedLookup :: (DefinedData -> Map String a) -> String -> ScopeData -> a
+scopedLookup f s sd = sl sd Nothing
+    where
+        sl NoData Nothing   = throw $ UnboundSymbolException $ "Symbol: " ++ s ++ " not bound."
+        sl NoData (Just a)  = a
+        sl sd' a            = sl (innerScope sd') (Map.lookup s (f $ defData sd') <|> a)
+
+varLookup :: String -> ScopeData -> DataType
+varLookup = scopedLookup vars
+
+funLookup :: String -> ScopeData -> FunData
+funLookup = scopedLookup funs
 
