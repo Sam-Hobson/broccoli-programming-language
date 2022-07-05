@@ -1,9 +1,11 @@
 module Main where
 
+import Interpreter (interpret)
 import ModuleParser (codeModule)
 import ParseTypes (Statement (..))
 import Parser
 import System.Environment (getArgs)
+import UsefulFuncs (global)
 
 formatParse1 :: Int -> [Statement] -> String
 formatParse1 n =
@@ -12,9 +14,10 @@ formatParse1 n =
       ( \x -> case x of
           FD (a, b, c, d) ->
             replicate n '\t' ++ show (a, b, c)
-                ++ " {\n" ++ formatParse1 (n + 1) d
-            ++ replicate n '\t' ++ "}\n"
-
+              ++ " {\n"
+              ++ formatParse1 (n + 1) d
+              ++ replicate n '\t'
+              ++ "}\n"
           _ -> replicate n '\t' ++ show x ++ "\n"
       )
 
@@ -36,10 +39,15 @@ main = do
 
   case getParsed parsedContent of
     Left a -> putStr $ "Error: " ++ show a
-    Right a -> putStr $ show a
+    Right a -> do
+        putStr $ show a
+        putStr $ sep ++ "INTERPRETED" ++ sep
+        let (io, _, _) = interpret global a
+        io
 
   putStr $ sep ++ "REMAINING CONTENT" ++ sep
 
   case getRemainder parsedContent of
     Left a -> putStr $ "Error: " ++ show a
     Right a -> putStr $ show a
+

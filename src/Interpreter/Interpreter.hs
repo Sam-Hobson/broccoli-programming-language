@@ -2,6 +2,7 @@
 
 module Interpreter where
 
+import Data.Maybe (fromMaybe)
 import Control.Exception (throw)
 import Data.Constructors.TH (EqC (eqConstr))
 import Data.Map (Map)
@@ -12,16 +13,23 @@ import qualified ModuleParser
 import qualified ParseTypes as P
 import UsefulFuncs
 
--- TODO: Incomplete
+import Debug.Trace (trace)
+
 interpret :: ScopeData -> [P.Statement] -> (IO (), ScopeData, DataType)
-interpret = undefined
+interpret sd = foldl
+    (\(io, sd', rt) s -> do
+        let (io', sd'', rt') = statementIn sd' s
+        trace (show (sd', rt)) (mconcat [io, io'], sd'', fromMaybe rt rt')
+    )
+    (pure (), sd, Void)
 
 -- TODO: Incomplete
-statementIn :: ScopeData -> P.Statement -> (IO (), ScopeData)
-statementIn sd (P.FD s) = (pure (), declareFun sd s)
-statementIn sd (P.FC s) = undefined
-statementIn sd (P.V v) = declareVar sd v
-statementIn sd P.Empty = undefined
+statementIn :: ScopeData -> P.Statement -> (IO (), ScopeData, Maybe DataType)
+statementIn sd (P.FD s)     = (pure (), declareFun sd s, Nothing)
+statementIn sd (P.FC s)     = Nothing <$ evalExpr (P.SymbolCall s) sd
+statementIn sd (P.V v)      = addLast (declareVar sd v) Nothing
+statementIn sd P.Empty      = (pure (), sd, Nothing)
+statementIn sd (P.Ret r)    = Just <$> evalExpr r sd
 
 declareVar :: ScopeData -> P.Var -> (IO (), ScopeData)
 declareVar sd (a, b, c) = do

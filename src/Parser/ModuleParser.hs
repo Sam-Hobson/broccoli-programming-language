@@ -1,8 +1,8 @@
 module ModuleParser where
 
 import BasicParserFuncs
-import ExprLexer (functionCall)
-import ParseTypes (Function, Statement (..))
+import ExprLexer (functionCall, expr)
+import ParseTypes (Function, Statement (..), Expr)
 import Parser
 import SyntaxParserFuncs (idToken, typeToken)
 import VarLexer (varDeclaration, varInitialisation, varParser)
@@ -16,9 +16,13 @@ function = do
   funContent <- surround "{" codeModule "}"
   pure (name, args, rtype, funContent)
 
+ret :: Parser Expr
+ret = tok (string "return") >> expr
+
 statement :: Parser Statement
 statement =
-  (FD <$> function)
+    (Ret <$> ret)
+    ||| (FD <$> function)
     ||| (FC <$> functionCall)
     ||| (V <$> varParser)
 

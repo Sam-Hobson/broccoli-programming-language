@@ -25,6 +25,9 @@ snd3 (_, b, _) = b
 trd3 :: (a, b, c) -> c
 trd3 (_, _, c) = c
 
+addLast :: (a, b) -> c -> (a, b, c)
+addLast (a, b) c = (a, b, c)
+
 traceScope :: ScopeData -> Namespace
 traceScope s = scope s : case innerScope s of
                             NoData  -> []

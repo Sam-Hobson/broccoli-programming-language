@@ -7,7 +7,7 @@ fun printSalad(s: string): void {
 
     fun sayHi(x: string): string {
         x1: string = "Hello, ";
-        return(x1 + x);
+        return x1 + x;
     };
 
     output(sayHi());

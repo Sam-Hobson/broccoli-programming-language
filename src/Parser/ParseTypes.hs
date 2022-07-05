@@ -33,5 +33,6 @@ data Statement
   = FD Function
   | FC FunctionData
   | V Var
+  | Ret Expr
   | Empty
   deriving (Show, Eq)
