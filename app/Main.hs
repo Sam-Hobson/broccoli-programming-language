@@ -42,7 +42,8 @@ main = do
     Right a -> do
         putStr $ concatMap ((++"\n") . show) a
         putStr $ sep ++ "INTERPRETED" ++ sep
-        let (io, _, _) = interpret global a
+        let (io, sd, _) = interpret global a
+        print sd
         io
 
   putStr $ sep ++ "REMAINING CONTENT" ++ sep

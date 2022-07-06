@@ -1,18 +1,16 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE TemplateHaskell #-}
 
-module InterpreterTypes
-where
+module InterpreterTypes where
 
-import Data.Constructors.TH ( deriveEqC )
+import Control.Exception (throw)
+import Data.Constructors.TH (deriveEqC)
 import Data.Data (Data)
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Control.Exception (throw)
-
-import qualified ParseTypes as P
 import Exceptions
+import qualified ParseTypes as P
 
 data DataType
   = Int (Maybe Integer)
@@ -20,6 +18,7 @@ data DataType
   | Void
   deriving
     (Show, Eq, Data)
+
 $(deriveEqC ''DataType)
 
 instance Num DataType where
@@ -46,13 +45,25 @@ type Name = String
 
 type Namespace = [Name]
 
-data FunData = FunData {funNs :: Namespace, args :: [(String, DataType)], retType :: DataType, content :: [P.Statement]}
-  deriving (Show, Eq)
+type RetData = (IO (), ScopeData, DataType)
+
+data FunData
+  = FunData {funNs :: Namespace, args :: [(String, DataType)], retType :: DataType, content :: [P.Statement]}
+  | BuiltIn {fname :: String, itypes :: [DataType], call :: [DataType] -> ScopeData -> RetData}
+
+instance Show FunData where
+    show (FunData ns a r c) = "{" ++ show ns ++ ", " ++ show a ++ ", " ++ show r ++ ", " ++ show c ++"}"
+    show (BuiltIn n i c) = "{" ++ show n ++ "," ++ show i ++ "}"
+
+instance Eq FunData where
+    (FunData a b c d) == (FunData e f g h) = (a == e) && (b == f) && (c == g) && (d == h)
+    (BuiltIn a b c) == (BuiltIn d e f) = (a == d) && (b == e)
+    _ == _ = False
 
 data DefinedData = DefinedData {vars :: VarMap, funs :: FunMap}
   deriving (Show, Eq)
 
 data ScopeData
-    = ScopeData {scope :: Name, defData :: DefinedData, innerScope :: ScopeData}
-    | NoScope
+  = ScopeData {scope :: Name, defData :: DefinedData, innerScope :: ScopeData}
+  | NoScope
   deriving (Show, Eq)

@@ -10,6 +10,11 @@ import Exceptions
 import Control.Exception (throw)
 import qualified ParseTypes as P
 
+import Debug.Trace
+
+mergeIO :: IO () -> IO () -> IO ()
+mergeIO oldIO newIO = mconcat [oldIO, newIO]
+
 emptyData :: DefinedData
 emptyData = DefinedData Map.empty Map.empty
 
@@ -26,9 +31,8 @@ addLast :: (a, b) -> c -> (a, b, c)
 addLast (a, b) c = (a, b, c)
 
 traceScope :: ScopeData -> Namespace
-traceScope s = scope s : case innerScope s of
-                            NoScope  -> []
-                            _       -> traceScope (innerScope s)
+traceScope NoScope = []
+traceScope s = scope s : traceScope (innerScope s)
 
 -- Takes 2 ScopeData objects and merges their data.
 -- The first ScopeData passed should contain new data, and should
@@ -36,10 +40,11 @@ traceScope s = scope s : case innerScope s of
 mergeScopeData :: ScopeData -> ScopeData -> ScopeData
 mergeScopeData a b
     | scope a /= scope b = throw $ ScopeException $ "Function returned with invalid scope: " ++ show (traceScope a)
+    -- | trace (show b ++ "\n") ((innerScope a) /= NoScope) = a {innerScope = mergeScopeData (innerScope a) (innerScope b)}
     | innerScope a /= NoScope = a {innerScope = mergeScopeData (innerScope a) (innerScope b)}
+    -- | trace (show a ++ "\n") (innerScope a == NoScope) = a {innerScope = innerScope b}
     | innerScope a == NoScope = a {innerScope = innerScope b}
     | otherwise = throw $ ScopeException $ "Function returned with invalid scope: " ++ show (traceScope a)
-
 
 mapPTypes :: P.Type -> DataType
 mapPTypes P.PInt = Int Nothing

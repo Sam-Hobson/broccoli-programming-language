@@ -2,13 +2,17 @@ var1: int = 3;
 var2: int = var1 + 3;
 var3: string = "salad";
 
+fun dog(): void {
+    var4: string = "HELLO WORLD";
+};
+
 fun printSalad(s: string): void {
     fun sayHi(x: string): string {
-        x1: string = "Hello, ";
-        return x1 + x;
+        dog();
+        return s + x;
     };
 
-    sayHi("" + var3);
+    sayHi("" + s);
 };
 
 printSalad(var3);

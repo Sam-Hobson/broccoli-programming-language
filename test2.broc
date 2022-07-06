@@ -1,0 +1,7 @@
+fun f(x: int): int {
+    return x * 5 + 1;
+};
+
+x: int = f(2);
+
+print("dog");
