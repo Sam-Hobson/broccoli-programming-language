@@ -16,14 +16,17 @@ import ScopeFuncs
 import UsefulFuncs
 
 interpret :: ScopeData -> [P.Statement] -> RetData
-interpret sd =
-  foldl
-    ( \(io, sd', rt) s -> do
-        let (io', sd'', rt') = statementIn sd' s
-        trace (show (sd', rt) ++ "\n") (mergeIO io io', sd'', fromMaybe rt rt')
-        -- (mergeIO io io', sd'', fromMaybe rt rt')
-    )
-    (pure (), sd, Void)
+interpret sd sa = (a, popFinalScopeData b, c)
+  where
+    (a, b, c) =
+      foldl
+        ( \(io, sd', rt) s -> do
+            let (io', sd'', rt') = statementIn sd' s
+            -- trace (show (sd', rt) ++ "\n") (mergeIO io io', sd'', fromMaybe rt rt')
+            (mergeIO io io', sd'', fromMaybe rt rt')
+        )
+        (pure (), sd, Void)
+        sa
 
 -- TODO: Incomplete
 statementIn :: ScopeData -> P.Statement -> (IO (), ScopeData, Maybe DataType)
@@ -71,7 +74,8 @@ evalExpr :: P.Expr -> ScopeData -> RetData
 evalExpr (P.Symbol s) d = (pure (), d, varLookup s d)
 evalExpr (P.Equation e) d = evalEquation e d
 evalExpr (P.SymbolCall (n, c)) d = do
-  let fdata = trace (show (funLookup n d) ++ "\n") (funLookup n d)
+  -- let fdata = trace (show (funLookup n d) ++ "\n") (funLookup n d)
+  let fdata = funLookup n d
   case fdata of
     FunData ns av rtype code -> do
       let (io, d', argVals) = evalFunArgs (snd <$> av) ns d c

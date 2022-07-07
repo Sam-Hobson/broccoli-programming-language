@@ -11,6 +11,7 @@ import Control.Exception (throw)
 import qualified ParseTypes as P
 
 import Debug.Trace
+import Data.Type.Equality (inner)
 
 mergeIO :: IO () -> IO () -> IO ()
 mergeIO oldIO newIO = mconcat [oldIO, newIO]
@@ -42,7 +43,7 @@ mergeScopeData a b
     | scope a /= scope b = throw $ ScopeException $ "Function returned with invalid scope: " ++ show (traceScope a)
     -- | trace (show b ++ "\n") ((innerScope a) /= NoScope) = a {innerScope = mergeScopeData (innerScope a) (innerScope b)}
     | innerScope a /= NoScope = a {innerScope = mergeScopeData (innerScope a) (innerScope b)}
-    -- | trace (show a ++ "\n") (innerScope a == NoScope) = a {innerScope = innerScope b}
+    -- | trace (show b ++ "\n") (innerScope a == NoScope) = a {innerScope = innerScope b}
     | innerScope a == NoScope = a {innerScope = innerScope b}
     | otherwise = throw $ ScopeException $ "Function returned with invalid scope: " ++ show (traceScope a)
 
@@ -52,7 +53,7 @@ mapPTypes P.PString = String Nothing
 mapPTypes P.PVoid = Void
 
 scopedLookup :: (DefinedData -> Map String a) -> String -> ScopeData -> a
-scopedLookup f s sd = sl sd Nothing
+scopedLookup f s sd = trace ("LOOKING FOR " ++ (show s) ++ "\n" ++ showSD sd) (sl sd Nothing)
     where
         sl NoScope Nothing   = throw $ UnboundSymbolException $ "Symbol: " ++ s ++ " not bound."
         sl NoScope (Just a)  = a
@@ -64,3 +65,15 @@ varLookup = scopedLookup vars
 funLookup :: String -> ScopeData -> FunData
 funLookup = scopedLookup funs
 
+popFinalScopeData :: ScopeData -> ScopeData
+popFinalScopeData NoScope = NoScope
+popFinalScopeData (ScopeData a b NoScope) = NoScope
+popFinalScopeData sd = sd {innerScope = popFinalScopeData (innerScope sd)}
+
+showSD :: ScopeData -> String
+showSD sd = show (traceScope sd) ++ showSD' sd 0 ++ "\n\n"
+    where
+        showSD' (ScopeData a b c) n = replicate n '\t' ++ show a ++ "\n"
+            ++ replicate n '\t' ++ show b ++ "\n"
+            ++ showSD' c (n + 1)
+        showSD' NoScope n = replicate n '\t' ++ show NoScope ++ "\n"

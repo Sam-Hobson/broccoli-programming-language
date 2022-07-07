@@ -1,7 +1,12 @@
-fun f(x: int): int {
-    return x * 5 + 1;
+fun DOG(): void {
+
 };
 
-x: int = f(2);
+fun INNER(): void {
+    fun INNERINNER(): void {
+        DOG();
+    };
+    INNERINNER();
+};
 
-print("dog");
+INNER();
