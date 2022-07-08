@@ -212,7 +212,11 @@ surround s1 p s2 = do
 -- Parse a string within a string.
 -- TODO: Examples
 innerString :: Parser String
-innerString = surround "\"" (list $ noneof "\"") "\""
+innerString = do
+    string "\""
+    r <- list $ noneof "\""
+    string "\""
+    pure r
 
 -- >>> parse (sepby1 character (is ',')) "a"
 -- <Parsed: "a"> <Remaining: "">

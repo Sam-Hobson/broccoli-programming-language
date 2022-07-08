@@ -82,7 +82,7 @@ evalExpr (P.SymbolCall (n, c)) d = do
       let d'' = calcFunScope d' fdata
       let d''' = foldl addVar d'' (zip (fst <$> av) argVals)
       let callResults = interpret d''' (content fdata)
-      (mergeIO io (fst3 callResults), mergeScopeData (snd3 callResults) d''', trd3 callResults)
+      (mergeIO io (fst3 callResults), mergeScopeData (snd3 callResults) d', trd3 callResults)
     BuiltIn fn input output -> do
       let (io, d', argVals) = evalFunArgs input (traceScope d ++ [fn]) d c
       let (io', d'', retVal) = call fdata argVals d'

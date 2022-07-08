@@ -42,14 +42,22 @@ traceScope s = scope s : traceScope (innerScope s)
 -- Takes 2 ScopeData objects and merges their data.
 -- The first ScopeData passed should contain new data, and should
 -- be a subset of the scope of the second ScopeData.
+
 mergeScopeData :: ScopeData -> ScopeData -> ScopeData
-mergeScopeData a b
-    | scope a /= scope b = throw $ ScopeException $ "Function returned with invalid scope: " ++ show (traceScope a)
-    -- | trace (show b ++ "\n") ((innerScope a) /= NoScope) = a {innerScope = mergeScopeData (innerScope a) (innerScope b)}
-    | innerScope a /= NoScope = a {innerScope = mergeScopeData (innerScope a) (innerScope b)}
-    -- | trace (show b ++ "\n") (innerScope a == NoScope) = a {innerScope = innerScope b}
-    | innerScope a == NoScope = a {innerScope = innerScope b}
-    | otherwise = throw $ ScopeException $ "Function returned with invalid scope: " ++ show (traceScope a)
+mergeScopeData newsd oldsd
+    | newsd == NoScope = oldsd
+    | scope newsd == scope oldsd = newsd {innerScope = mergeScopeData (innerScope newsd) (innerScope oldsd)}
+    | otherwise = throw $ ScopeException $ "Function returned with invalid scope: " ++ show (traceScope newsd)
+
+
+-- mergeScopeData :: ScopeData -> ScopeData -> ScopeData
+-- mergeScopeData a b
+--     | scope a /= scope b = throw $ ScopeException $ "Function returned with invalid scope: " ++ show (traceScope a)
+--     -- | trace (show b ++ "\n") ((innerScope a) /= NoScope) = a {innerScope = mergeScopeData (innerScope a) (innerScope b)}
+--     | innerScope a /= NoScope = a {innerScope = mergeScopeData (innerScope a) (innerScope b)}
+--     -- | trace (show b ++ "\n") (innerScope a == NoScope) = a {innerScope = innerScope b}
+--     | innerScope a == NoScope = a {innerScope = innerScope b}
+--     | otherwise = throw $ ScopeException $ "Function returned with invalid scope: " ++ show (traceScope a)
 
 -- Maps a parse type to an interpreted type.
 mapPTypes :: P.Type -> DataType
@@ -60,9 +68,9 @@ mapPTypes P.PVoid = Void
 -- This function will loookup a value within a ScopeData and find the most recent definition
 -- of this value.
 scopedLookup :: (DefinedData -> Map String a) -> String -> ScopeData -> a
-scopedLookup f s sd = trace ("LOOKING FOR " ++ show s ++ "\n") (sl sd Nothing)
+scopedLookup f s sd = sl sd Nothing
     where
-        sl NoScope Nothing  = trace (showSD sd) (throw $ UnboundSymbolException $ "Symbol: " ++ s ++ " not bound.")
+        sl NoScope Nothing  = throw $ UnboundSymbolException $ "Symbol: " ++ s ++ " not bound."
         sl NoScope (Just a) = a
         sl sd' a            = sl (innerScope sd') (Map.lookup s (f $ defData sd') <|> a)
 
