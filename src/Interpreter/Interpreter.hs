@@ -58,37 +58,41 @@ evalPrimitiveExpr (P.String s) = String $ Just s
 evalPrimitiveExpr a = throw $ ExpectedPrimitiveTypeException $ "Expected primitive type. " ++ show a ++ " provided instead."
 
 evalFunArgs :: [P.Expr] -> ScopeData -> (IO (), ScopeData, [DataType])
-evalFunArgs e sd = 
-    foldl
-        (\(io, sd', types) e'-> do
-            let (io', sd'', ret) = evalExpr e' sd'
-            (mergeIO io io', sd'', types ++ [ret])
-        )
+evalFunArgs e sd =
+  foldl
+    ( \(io, sd', types) e' -> do
+        let (io', sd'', ret) = evalExpr e' sd'
+        (mergeIO io io', sd'', types ++ [ret])
+    )
     (pure (), sd, [])
     e
 
--- TODO: Incomplete
+-- Evaluates an expression. Expressions can include a call to a function,
+-- this will execute the code of a function if it is called.
+-- Will merge ScopeData after an expression.
 evalExpr :: P.Expr -> ScopeData -> RetData
 evalExpr (P.Symbol s) d = (pure (), d, varLookup s d)
 evalExpr (P.Equation e) d = evalEquation e d
 evalExpr (P.SymbolCall (n, c)) d = do
-    let (io, d', argVals) = evalFunArgs c d
-    let fdata = funLookup n d
-    if not $ matchingArgTypes argVals fdata then
-        trace (show fdata ++ "\n\n" ++ show argVals) (throw $ MismatchedParameterException $ "Incorrect parameter types in: " ++ show (funNs fdata) ++ " given.")
-    else
-      case fdata of
-        FunData ns av rtype code -> do
-          let d'' = calcFunScope d' fdata
-          -- Add all parameter variables to function scope.
-          let d''' = foldl addVar d'' (zip (fst <$> av) argVals)
-          let callResults = interpret d''' (content fdata) -- Call the function
-          (mergeIO io (fst3 callResults), mergeScopeData (snd3 callResults) d', trd3 callResults)
-        BuiltIn fn input output -> do
-          let (io', d'', retVal) = call fdata argVals d'
-          (mergeIO io io', d'', retVal)
+  let (io, d', argVals) = evalFunArgs c d
+  let fdata = funLookup n d
+  if not $ matchingArgTypes argVals fdata
+    then throw $ MismatchedParameterException $ "Incorrect parameter types in: " ++ show (funNs fdata) ++ " given."
+    else case fdata of
+      FunData ns av rtype code -> do
+        let d'' = calcFunScope d' fdata
+        -- Add all parameter variables to function scope.
+        let d''' = foldl addVar d'' (zip (fst <$> av) argVals)
+        let callResults = interpret d''' (content fdata) -- Call the function
+        (mergeIO io (fst3 callResults), mergeScopeData (snd3 callResults) d', trd3 callResults)
+      BuiltIn fn input output -> do
+        let (io', d'', retVal) = call fdata argVals d'
+        (mergeIO io io', d'', retVal)
 evalExpr e d = (pure (), d, evalPrimitiveExpr e)
 
+-- Evaluates an equation. Operations on DataTypes are
+-- handled through the instance of the Num dataclass on
+-- DataType.
 evalEquation :: P.Equation -> ScopeData -> RetData
 evalEquation (P.E e) d = evalExpr e d
 evalEquation (P.Plus e1 e2) d = do

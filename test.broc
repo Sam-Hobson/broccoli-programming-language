@@ -16,4 +16,5 @@ fun greeting(): void {
 
 greeting();
 
-printI(5);
+var4: int = 5 + var2;
+printS("Val: " + var4);
