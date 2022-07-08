@@ -8,22 +8,25 @@ import Control.Exception (throw)
 import InterpreterTypes
 import Exceptions
 import UsefulFuncs
+import Debug.Trace (trace)
 
 addVar :: ScopeData -> (String, DataType) -> ScopeData
-addVar sd (k, v) = do
-    let dd = defData sd
-    sd {defData = dd {vars = Map.insert k v (vars dd)}}
+addVar NoScope (k, v) = NoScope
+addVar (ScopeData name dd NoScope) (k, v) = ScopeData name (dd {vars = Map.insert k v (vars dd)}) NoScope
+addVar sd kv = sd {innerScope = addVar (innerScope sd) kv}
 
 addFun :: ScopeData -> (String, FunData) -> ScopeData
-addFun sd (k, v) = do
-    let dd = defData sd
-    sd {defData = dd {funs = Map.insert k v (funs dd)}}
+addFun NoScope (k, v) = NoScope
+addFun (ScopeData name dd NoScope) (k, v) = ScopeData name (dd {funs = Map.insert k v (funs dd)}) NoScope
+addFun sd kv = sd {innerScope = addFun (innerScope sd) kv}
 
+-- Calculates the scope to be passed to a function.
+-- This will be the portion of a scope that is defined within the namespace of a function.
 calcFunScope :: ScopeData -> FunData -> ScopeData
-calcFunScope s f = cfs s (funNs f)
-  where
-    cfs s' (x : y : zs)
-      | scope s' /= x = throw $ UnboundSymbolException $ "Function: " ++ show (funNs f) ++ " not found."
-      | null zs = s' {innerScope = ScopeData y emptyData NoScope}
-      | otherwise = s' {innerScope = cfs (innerScope s') (y : zs)}
-    cfs _ _ = throw $ ScopeException $ "Function: " ++ show (funNs f) ++ " not in scope."
+calcFunScope sd fd = cfs sd (funNs fd)
+    where
+        cfs sd' ns
+            | sd' == NoScope = ScopeData (head ns) emptyData NoScope
+            | scope sd' /= head ns = ScopeData (head ns) emptyData NoScope
+            | scope sd' == head ns = sd' {innerScope = cfs (innerScope sd') (tail ns)}
+            | otherwise = throw $ UnboundSymbolException $ "Function: " ++ show (funNs fd) ++ " not found."
