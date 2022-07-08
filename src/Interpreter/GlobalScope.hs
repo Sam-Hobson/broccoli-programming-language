@@ -11,9 +11,9 @@ import UsefulFuncs
 import ScopeFuncs
 
 globalPrintS :: FunData
-globalPrintS = BuiltIn "print" [String Nothing] globalPrintImplementation
+globalPrintS = BuiltIn "printS" [String Nothing] globalPrintImplementation
 globalPrintI :: FunData
-globalPrintI = BuiltIn "print" [Int Nothing] globalPrintImplementation
+globalPrintI = BuiltIn "printI" [Int Nothing] globalPrintImplementation
 
 globalPrintImplementation :: [DataType] -> ScopeData -> RetData
 globalPrintImplementation [String (Just s)] sd = (putStr s, sd, Void)
@@ -26,7 +26,7 @@ globalPrintImplementation s sd
 
 globalFuns :: FunMap
 globalFuns = foldr (uncurry Map.insert) Map.empty
-    [("print", globalPrintS), ("print", globalPrintI)]
+    [("printS", globalPrintS), ("printI", globalPrintI)]
 
 globalDefData :: DefinedData
 globalDefData = DefinedData Map.empty globalFuns

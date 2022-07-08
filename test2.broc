@@ -5,4 +5,5 @@ fun withExcitement(x: string): string {
     return x + "!\n";
 };
 
-print(withExcitement("hi"));
+printS(withExcitement("hi"));
+printI(11037);

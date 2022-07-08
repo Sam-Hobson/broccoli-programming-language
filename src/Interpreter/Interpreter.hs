@@ -67,18 +67,6 @@ evalFunArgs e sd =
     (pure (), sd, [])
     e
 
--- evalFunArgs :: [DataType] -> Namespace -> ScopeData -> [P.Expr] -> (IO (), ScopeData, [DataType])
--- evalFunArgs dt ns sd e =
---   foldl
---     ( \(io, sd', types) (expectedType, e') -> do
---         let r = evalExpr e' sd'
---         if not $ eqConstr expectedType (trd3 r)
---           then throw $ MismatchedParameterException $ "Incorrect parameter types in: " ++ show ns ++ " given."
---           else (mergeIO io (fst3 r), snd3 r, types ++ [trd3 r])
---     )
---     (pure (), sd, [])
---     (zip dt e)
-
 -- TODO: Incomplete
 evalExpr :: P.Expr -> ScopeData -> RetData
 evalExpr (P.Symbol s) d = (pure (), d, varLookup s d)

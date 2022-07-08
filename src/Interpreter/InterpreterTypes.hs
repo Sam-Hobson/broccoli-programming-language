@@ -23,6 +23,8 @@ $(deriveEqC ''DataType)
 
 instance Num DataType where
   Int (Just a) + Int (Just b) = Int (Just $ a + b)
+  Int (Just a) + String (Just b) = String (Just $ show a ++ b)
+  String (Just a) + Int (Just b) = String (Just $ a ++ show b)
   String (Just a) + String (Just b) = String (Just $ a ++ b)
   _ + _ = throw $ InvalidEquationException "Cannot add datatype."
   Int (Just a) - Int (Just b) = Int (Just $ a - b)
