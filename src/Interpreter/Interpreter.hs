@@ -75,7 +75,7 @@ evalExpr (P.SymbolCall (n, c)) d = do
     let (io, d', argVals) = evalFunArgs c d
     let fdata = funLookup n d
     if not $ matchingArgTypes argVals fdata then
-        throw $ MismatchedParameterException $ "Incorrect parameter types in: " ++ show (funNs fdata) ++ " given."
+        trace (show fdata ++ "\n\n" ++ show argVals) (throw $ MismatchedParameterException $ "Incorrect parameter types in: " ++ show (funNs fdata) ++ " given.")
     else
       case fdata of
         FunData ns av rtype code -> do

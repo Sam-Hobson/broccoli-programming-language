@@ -52,8 +52,13 @@ funLookup = scopedLookup funs
 -- Returns True if the arguments for the given Fundata accept the types passed
 -- in the list of DataTypes.
 matchingArgTypes :: [DataType] -> FunData -> Bool
-matchingArgTypes d (FunData _ args _ _) = (length d == length args) && all (uncurry eqConstr) (zip d (snd <$> args))
-matchingArgTypes d (BuiltIn _ args _) = (length d == length args) && all (uncurry eqConstr) (zip d args)
+matchingArgTypes d (FunData _ args _ _) = (length d' == length vals) && all (uncurry eqConstr) (zip d' vals)
+    where
+        vals = snd <$> args
+        d' = filter (Void /=) d
+matchingArgTypes d (BuiltIn _ args _) = (length d' == length args) && all (uncurry eqConstr) (zip d' args)
+    where
+        d' = filter (Void /=) d
 
 -- Return the entire namespace of a ScopeData. This is usually use with errors/debugging.
 traceScope :: ScopeData -> Namespace

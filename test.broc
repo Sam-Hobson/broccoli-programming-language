@@ -2,18 +2,18 @@ var1: int = 3;
 var2: int = var1 + 3;
 var3: string = "salad";
 
-fun world(word: string): void {
+fun world(word: string): string {
     return word + " WORLD";
 };
 
 fun greeting(): void {
     fun sayGoodbye(): void {
-        print("Goodbye!\n");
+        printS("Goodbye!\n");
     };
-    print(world("Hello") + "!\n");
+    printS(world("Hello") + "!\n");
     sayGoodbye();
 };
 
 greeting();
 
-print(5);
+printI(5);

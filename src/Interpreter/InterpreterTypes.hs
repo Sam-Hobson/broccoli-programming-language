@@ -54,13 +54,13 @@ data FunData
   | BuiltIn {fname :: String, itypes :: [DataType], call :: [DataType] -> ScopeData -> RetData}
 
 instance Show FunData where
-    show (FunData ns a r c) = "{" ++ show ns ++ ", " ++ show a ++ ", " ++ show r ++ ", " ++ show c ++"}"
-    show (BuiltIn n i c) = "{" ++ show n ++ "," ++ show i ++ "}"
+  show (FunData ns a r c) = "{" ++ show ns ++ ", " ++ show a ++ ", " ++ show r ++ ", " ++ show c ++ "}"
+  show (BuiltIn n i c) = "{" ++ show n ++ "," ++ show i ++ "}"
 
 instance Eq FunData where
-    (FunData a b c d) == (FunData e f g h) = (a == e) && (b == f) && (c == g) && (d == h)
-    (BuiltIn a b c) == (BuiltIn d e f) = (a == d) && (b == e)
-    _ == _ = False
+  (FunData a b c d) == (FunData e f g h) = (a == e) && (b == f) && (c == g) && (d == h)
+  (BuiltIn a b c) == (BuiltIn d e f) = (a == d) && (b == e)
+  _ == _ = False
 
 data DefinedData = DefinedData {vars :: VarMap, funs :: FunMap}
   deriving (Show, Eq)
