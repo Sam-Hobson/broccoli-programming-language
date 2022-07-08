@@ -12,7 +12,8 @@ Some ideas for features to implement into Broccoli are:
 - Impurity tracking and verbose reporting
 
 
-### Getting started with Broccoli
+
+## Getting started with Broccoli
 You will be required to have cabal installed. Check out https://www.haskell.org/ghcup/ for more info.
 
 Simply clone the repo and run cabal install:
@@ -27,6 +28,7 @@ cabal run :all "*FILENAME*"
 ```
 
 
-### TODO:
+
+## TODO:
 - Implement hooks in language functionality
 - Create compiler
