@@ -4,11 +4,13 @@ where
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Control.Exception (throw)
+import Control.Applicative ((<|>))
 
 import InterpreterTypes
 import Exceptions
 import UsefulFuncs
 import Debug.Trace (trace)
+import qualified ParseTypes as P
 
 addVar :: ScopeData -> (String, DataType) -> ScopeData
 addVar NoScope (k, v) = NoScope
@@ -30,3 +32,54 @@ calcFunScope sd fd = cfs sd (funNs fd)
             | scope sd' /= head ns = ScopeData (head ns) emptyData NoScope
             | scope sd' == head ns = sd' {innerScope = cfs (innerScope sd') (tail ns)}
             | otherwise = throw $ UnboundSymbolException $ "Function: " ++ show (funNs fd) ++ " not found."
+
+-- This function will loookup a value within a ScopeData and find the most recent definition
+-- of this value.
+scopedLookup :: (DefinedData -> Map String a) -> String -> ScopeData -> a
+scopedLookup f s sd = sl sd Nothing
+    where
+        sl NoScope Nothing  = throw $ UnboundSymbolException $ "Symbol: " ++ s ++ " not bound."
+        sl NoScope (Just a) = a
+        sl sd' a            = sl (innerScope sd') (Map.lookup s (f $ defData sd') <|> a)
+
+
+varLookup :: String -> ScopeData -> DataType
+varLookup = scopedLookup vars
+
+funLookup :: String -> ScopeData -> FunData
+funLookup = scopedLookup funs
+
+-- Return the entire namespace of a ScopeData. This is usually use with errors/debugging.
+traceScope :: ScopeData -> Namespace
+traceScope NoScope = []
+traceScope s = scope s : traceScope (innerScope s)
+
+-- Takes 2 ScopeData objects and merges their data.
+-- The first ScopeData passed should contain new data, and should
+-- be a subset of the scope of the second ScopeData.
+
+mergeScopeData :: ScopeData -> ScopeData -> ScopeData
+mergeScopeData newsd oldsd
+    | newsd == NoScope = oldsd
+    | scope newsd == scope oldsd = newsd {innerScope = mergeScopeData (innerScope newsd) (innerScope oldsd)}
+    | otherwise = throw $ ScopeException $ "Function returned with invalid scope: " ++ show (traceScope newsd)
+
+
+-- Removes the last inner scope data from a scope. This will usually be used when returning
+-- from a code segment to remove the segments scope from the ScopeData.
+popFinalScopeData :: ScopeData -> ScopeData
+popFinalScopeData NoScope = NoScope
+popFinalScopeData (ScopeData a b NoScope) = NoScope
+popFinalScopeData sd = sd {innerScope = popFinalScopeData (innerScope sd)}
+
+
+-- Shows a ScopeData in a more readable string.
+showSD :: ScopeData -> String
+showSD sd = show (traceScope sd) ++ showSD' sd 0 ++ "\n\n"
+    where
+        showSD' (ScopeData a b c) n = replicate n '\t' ++ show a ++ "\n\n"
+            ++ replicate n '\t' ++ show b ++ "\n\n"
+            ++ showSD' c (n + 1)
+        showSD' NoScope n = replicate n '\t' ++ show NoScope ++ "\n"
+
+

@@ -2,7 +2,7 @@ var1: int = 3;
 var2: int = var1 + 3;
 var3: string = "salad";
 
-fun world(word: string): string {
+fun world(word: string): void {
     return word + " WORLD";
 };
 
