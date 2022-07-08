@@ -1,0 +1,8 @@
+
+
+
+fun withExcitement(x: string): string {
+    return x + "!\n";
+};
+
+print(withExcitement("hi"));

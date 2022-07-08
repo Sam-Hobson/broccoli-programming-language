@@ -11,6 +11,7 @@ import Exceptions
 import UsefulFuncs
 import Debug.Trace (trace)
 import qualified ParseTypes as P
+import Data.Constructors.EqC (EqC(eqConstr))
 
 addVar :: ScopeData -> (String, DataType) -> ScopeData
 addVar NoScope (k, v) = NoScope
@@ -42,12 +43,17 @@ scopedLookup f s sd = sl sd Nothing
         sl NoScope (Just a) = a
         sl sd' a            = sl (innerScope sd') (Map.lookup s (f $ defData sd') <|> a)
 
-
 varLookup :: String -> ScopeData -> DataType
 varLookup = scopedLookup vars
 
 funLookup :: String -> ScopeData -> FunData
 funLookup = scopedLookup funs
+
+-- Returns True if the arguments for the given Fundata accept the types passed
+-- in the list of DataTypes.
+matchingArgTypes :: [DataType] -> FunData -> Bool
+matchingArgTypes d (FunData _ args _ _) = (length d == length args) && all (uncurry eqConstr) (zip d (snd <$> args))
+matchingArgTypes d (BuiltIn _ args _) = (length d == length args) && all (uncurry eqConstr) (zip d args)
 
 -- Return the entire namespace of a ScopeData. This is usually use with errors/debugging.
 traceScope :: ScopeData -> Namespace

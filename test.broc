@@ -16,3 +16,4 @@ fun greeting(): void {
 
 greeting();
 
+print(5);

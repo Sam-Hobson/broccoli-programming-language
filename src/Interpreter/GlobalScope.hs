@@ -10,13 +10,15 @@ import InterpreterTypes
 import UsefulFuncs
 import ScopeFuncs
 
-globalPrint :: FunData
-globalPrint = BuiltIn "print" [String Nothing] globalPrintI
+globalPrintS :: FunData
+globalPrintS = BuiltIn "print" [String Nothing] globalPrintImplementation
+globalPrintI :: FunData
+globalPrintI = BuiltIn "print" [Int Nothing] globalPrintImplementation
 
-globalPrintI :: [DataType] -> ScopeData -> RetData
-globalPrintI [String (Just s)] sd = (putStr s, sd, Void)
-globalPrintI [Int (Just i)] sd = (putStr $ show i, sd, Void)
-globalPrintI s sd
+globalPrintImplementation :: [DataType] -> ScopeData -> RetData
+globalPrintImplementation [String (Just s)] sd = (putStr s, sd, Void)
+globalPrintImplementation [Int (Just i)] sd = (putStr $ show i, sd, Void)
+globalPrintImplementation s sd
     = throw
         $ MismatchedParameterException
         $ "Incorrect parameter passed to function \'print\'. Expected: String or Int. Got: "
@@ -24,7 +26,7 @@ globalPrintI s sd
 
 globalFuns :: FunMap
 globalFuns = foldr (uncurry Map.insert) Map.empty
-    [("print", globalPrint)]
+    [("print", globalPrintS), ("print", globalPrintI)]
 
 globalDefData :: DefinedData
 globalDefData = DefinedData Map.empty globalFuns
