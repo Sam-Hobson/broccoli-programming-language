@@ -97,6 +97,7 @@ notOP = tok (string "not" ||| string "!") >> pure NotOP
 e1 :: Parser BoolOp
 e1 = E1 <$> expr
 
+
 boolOp :: Parser BoolOp
 boolOp = do
     let ops = [eqOP, greaterOP, greaterEqOP, lessOP, lessEqOP, notEqOP, andOP, orOP, xorOP]
