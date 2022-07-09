@@ -1,9 +1,54 @@
 module ExprLexer where
 
 import BasicParserFuncs
-import ParseTypes (Expr (..), FunctionData, Equation(..))
+import ParseTypes
 import Parser
 import SyntaxParserFuncs
+
+-- BOOLEAN OPERATIONS
+
+eqOP :: Parser (BoolOp -> BoolOp -> BoolOp)
+eqOP = tok (string "==") >> pure EqOP
+
+greaterOP :: Parser (BoolOp -> BoolOp -> BoolOp)
+greaterOP = tok (string ">") >> pure GreaterOP
+
+greaterEqOP :: Parser (BoolOp -> BoolOp -> BoolOp)
+greaterEqOP = tok (string ">=") >> pure GreaterEqOP
+
+lessOP :: Parser (BoolOp -> BoolOp -> BoolOp)
+lessOP = tok (string "<") >> pure LessOP
+
+lessEqOP :: Parser (BoolOp -> BoolOp -> BoolOp)
+lessEqOP = tok (string "<=") >> pure LessEqOP
+
+notEqOP :: Parser (BoolOp -> BoolOp -> BoolOp)
+notEqOP = tok (string "!=") >> pure NotEqOP
+
+andOP :: Parser (BoolOp -> BoolOp -> BoolOp)
+andOP = tok (string "&&") >> pure AndOP
+
+orOP :: Parser (BoolOp -> BoolOp -> BoolOp)
+orOP = tok (string "||") >> pure OrOP
+
+xorOP :: Parser (BoolOp -> BoolOp -> BoolOp)
+xorOP = tok (string "^") >> pure XorOP
+
+notOP :: Parser (BoolOp -> BoolOp)
+notOP = tok (string "not" ||| string "!") >> pure NotOP
+
+e1 :: Parser BoolOp
+e1 = atomicOp E1
+
+boolOp :: Parser BoolOp
+boolOp = do
+  let ops = [eqOP, greaterOP, greaterEqOP, lessOP, lessEqOP, notEqOP, andOP, orOP, xorOP]
+  r <- foldl chain ((notOP <*> e1) ||| e1) ops
+  case r of
+    E1 e -> failed $ UnexpectedString (show e)
+    _ -> pure r
+
+-- EQUATION OPERATIONS
 
 op :: Char -> Parser Char -- parse a single char operator
 op c = do
@@ -19,20 +64,19 @@ add = (op '+' >> pure Plus) ||| (op '-' >> pure Minus)
 
 equation :: Parser Equation
 equation = do
-    r <- chain term add
-    case r of
-        E e -> failed $ UnexpectedString (show e)
-        _ -> pure r
+  r <- foldl chain (atomicOp E) [times, add]
+  case r of
+    E e -> failed $ UnexpectedString (show e)
+    _ -> pure r
 
-term :: Parser Equation
-term = chain atomicEq times
+atomicOp :: (Expr -> a) -> Parser a
+atomicOp f =
+  (f . Number <$> tok integer)
+    ||| (f . String <$> tok innerString)
+    ||| (f . SymbolCall <$> tok functionCall)
+    ||| (f . Symbol <$> idToken)
 
-atomicEq :: Parser Equation
-atomicEq =
-    (E . Number <$> tok integer)            |||
-    (E . String <$> tok innerString)        |||
-    (E . SymbolCall <$> tok functionCall)   |||
-    (E . Symbol <$> idToken)
+-- EXPRESSION OPERATIONS
 
 functionCall :: Parser FunctionData
 functionCall = do
@@ -43,6 +87,7 @@ functionCall = do
 expr :: Parser Expr
 expr =
   (Equation <$> tok equation)
+    ||| (BoolOp <$> tok boolOp)
     ||| (Number <$> tok integer)
     ||| (String <$> tok innerString)
     ||| (SymbolCall <$> tok functionCall)
