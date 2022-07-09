@@ -28,6 +28,7 @@ library
         SyntaxParserFuncs,
         ExprLexer,
         VarLexer,
+        BoolOp,
         ParseTypes,
         ModuleParser,
         IgnoredChars,

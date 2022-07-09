@@ -27,3 +27,13 @@ idToken = do
   rest <- tok word
   pure $ c : rest
 
+chain :: Parser a -> Parser (a -> a -> a) -> Parser a
+chain p op = p >>= rest
+  where
+    rest a =
+      ( do
+          f <- op
+          b <- p
+          rest (f a b)
+      )
+        ||| pure a

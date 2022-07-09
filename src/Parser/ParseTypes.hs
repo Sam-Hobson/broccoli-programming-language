@@ -9,6 +9,20 @@ data Equation
 
 type FunctionData = (String, [Expr])
 
+data BoolOp
+    = EqOP        BoolOp BoolOp
+    | GreaterOP   BoolOp BoolOp
+    | GreaterEqOP BoolOp BoolOp
+    | LessOP      BoolOp BoolOp
+    | LessEqOP    BoolOp BoolOp
+    | NotEqOP     BoolOp BoolOp
+    | AndOP       BoolOp BoolOp
+    | OrOP        BoolOp BoolOp
+    | XorOP       BoolOp BoolOp
+    | NotOP       BoolOp
+    | E1          Expr
+    deriving (Show, Eq)
+
 data Expr
   = Number Integer
   | Equation Equation

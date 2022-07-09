@@ -3,7 +3,7 @@ module ExprLexer where
 import BasicParserFuncs
 import ParseTypes (Expr (..), FunctionData, Equation(..))
 import Parser
-import SyntaxParserFuncs (idToken)
+import SyntaxParserFuncs
 
 op :: Char -> Parser Char -- parse a single char operator
 op c = do
@@ -33,17 +33,6 @@ atomicEq =
     (E . String <$> tok innerString)        |||
     (E . SymbolCall <$> tok functionCall)   |||
     (E . Symbol <$> idToken)
-
-chain :: Parser a -> Parser (a -> a -> a) -> Parser a
-chain p op = p >>= rest
-  where
-    rest a =
-      ( do
-          f <- op
-          b <- p
-          rest (f a b)
-      )
-        ||| pure a
 
 functionCall :: Parser FunctionData
 functionCall = do
