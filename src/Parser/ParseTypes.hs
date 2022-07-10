@@ -26,6 +26,7 @@ data Expr
   = Number      Integer
   | String      String
   | Symbol      String
+  | Boolean     Bool
   | BoolOp      BoolOp
   | Equation    Equation
   | SymbolCall  FunctionData

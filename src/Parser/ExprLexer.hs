@@ -7,6 +7,9 @@ import SyntaxParserFuncs
 
 -- BOOLEAN OPERATIONS
 
+boolean :: Parser Bool
+boolean = (tok (string "True") >> pure True) ||| (tok (string "False") >> pure False)
+
 eqOP :: Parser (BoolOp -> BoolOp -> BoolOp)
 eqOP = tok (string "==") >> pure EqOP
 
@@ -89,8 +92,9 @@ expr :: Parser Expr
 expr =
     (Priority <$> priority)
     ||| (Equation <$> tok equation)
-    ||| (BoolOp <$> tok boolOp)
     ||| (Number <$> tok integer)
+    ||| (BoolOp <$> tok boolOp)
+    ||| (Boolean <$> tok boolean)
     ||| (String <$> tok innerString)
     ||| (SymbolCall <$> tok functionCall)
     ||| (Symbol <$> tok idToken)
