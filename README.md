@@ -30,5 +30,6 @@ cabal run :all "*FILENAME*"
 
 
 ## TODO:
+- Make function overloading possible
 - Implement hooks in language functionality
 - Create compiler
