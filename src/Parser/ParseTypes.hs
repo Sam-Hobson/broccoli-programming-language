@@ -1,10 +1,10 @@
 module ParseTypes where
 
 data Equation
-  = Plus Equation Equation
-  | Minus Equation Equation
-  | Times Equation Equation
-  | E Expr
+  = Plus    Equation Equation
+  | Minus   Equation Equation
+  | Times   Equation Equation
+  | E       Expr
   deriving (Show, Eq)
 
 type FunctionData = (String, [Expr])
@@ -24,12 +24,13 @@ data BoolOp
     deriving (Show, Eq)
 
 data Expr
-  = Number Integer
-  | Equation Equation
-  | BoolOp BoolOp
-  | String String
-  | Symbol String
-  | SymbolCall FunctionData
+  = Number      Integer
+  | Equation    Equation
+  | BoolOp      BoolOp
+  | String      String
+  | Symbol      String
+  | SymbolCall  FunctionData
+  | Priority    Expr
   | None
   deriving (Show, Eq)
 
@@ -45,9 +46,9 @@ type Var = (String, Type, Expr)
 type Function = (String, [Var], Type, [Statement])
 
 data Statement
-  = FD Function
-  | FC FunctionData
-  | V Var
+  = FD  Function
+  | FC  FunctionData
+  | V   Var
   | Ret Expr
   | Empty
   deriving (Show, Eq)

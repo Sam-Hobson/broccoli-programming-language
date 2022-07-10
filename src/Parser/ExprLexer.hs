@@ -75,8 +75,12 @@ atomicOp f =
     ||| (f . String <$> tok innerString)
     ||| (f . SymbolCall <$> tok functionCall)
     ||| (f . Symbol <$> idToken)
+    ||| (f . Priority <$> priority)
 
 -- EXPRESSION OPERATIONS
+
+priority :: Parser Expr
+priority = surround "(" expr ")"
 
 functionCall :: Parser FunctionData
 functionCall = do
@@ -86,7 +90,8 @@ functionCall = do
 
 expr :: Parser Expr
 expr =
-  (Equation <$> tok equation)
+    (Priority <$> priority)
+    ||| (Equation <$> tok equation)
     ||| (BoolOp <$> tok boolOp)
     ||| (Number <$> tok integer)
     ||| (String <$> tok innerString)
