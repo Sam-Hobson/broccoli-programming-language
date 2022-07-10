@@ -53,9 +53,10 @@ argDefinition (s, t, e) = (s, f $ evalPrimitiveExpr e)
     f a = a
 
 evalPrimitiveExpr :: P.Expr -> DataType
-evalPrimitiveExpr P.None = Void
-evalPrimitiveExpr (P.Number i) = Int $ Just i
-evalPrimitiveExpr (P.String s) = String $ Just s
+evalPrimitiveExpr P.None        = Void
+evalPrimitiveExpr (P.Number i)  = Int $ Just i
+evalPrimitiveExpr (P.String s)  = String $ Just s
+evalPrimitiveExpr (P.Boolean b) = Boolean $ Just b
 evalPrimitiveExpr a = throw $ ExpectedPrimitiveTypeException $ "Expected primitive type. " ++ show a ++ " provided instead."
 
 evalFunArgs :: [P.Expr] -> ScopeData -> (IO (), ScopeData, [DataType])
@@ -74,7 +75,7 @@ evalFunArgs e sd =
 evalExpr :: P.Expr -> ScopeData -> RetData
 evalExpr (P.Symbol s) d = (pure (), d, varLookup s d)
 evalExpr (P.Equation e) d = evalEquation e d
-evalExpr (P.BoolOp b) d = evalBool b d
+evalExpr (P.BoolCompOp b) d = evalCompOp b d
 evalExpr (P.SymbolCall (n, c)) d = do
   let (io, d', argVals) = evalFunArgs c d
   let fdata = funLookup n d
@@ -93,52 +94,29 @@ evalExpr (P.SymbolCall (n, c)) d = do
 evalExpr (Priority e) d = evalExpr e d
 evalExpr e d = (pure (), d, evalPrimitiveExpr e)
 
+evalBothSides :: (a -> ScopeData -> RetData) -> ScopeData -> (DataType -> DataType -> DataType) -> a -> a -> RetData
+evalBothSides f sd rf a b = do
+    let (io, sd', ret) = f a sd
+    let (io', sd'', ret') = f b sd'
+    (mergeIO io io', sd'', rf ret ret')
+
 -- Evaluates an equation. Operations on DataTypes are
 -- handled through the instance of the Num dataclass on
 -- DataType.
 evalEquation :: P.Equation -> ScopeData -> RetData
-evalEquation (P.E e) d = evalExpr e d
-evalEquation (P.Plus e1 e2) d = do
-  let r1 = evalEquation e1 d
-  let r2 = evalEquation e2 (snd3 r1)
-  (pure (), snd3 r2, trd3 r1 + trd3 r2)
-evalEquation (P.Minus e1 e2) d = do
-  let r1 = evalEquation e1 d
-  let r2 = evalEquation e2 (snd3 r1)
-  (pure (), snd3 r2, trd3 r1 - trd3 r2)
-evalEquation (P.Times e1 e2) d = do
-  let r1 = evalEquation e1 d
-  let r2 = evalEquation e2 (snd3 r1)
-  (pure (), snd3 r2, trd3 r1 * trd3 r2)
+evalEquation (P.E e) d          = evalExpr e d
+evalEquation (P.Plus e1 e2) d   = evalBothSides evalEquation d (+) e1 e2
+evalEquation (P.Minus e1 e2) d  = evalBothSides evalEquation d (-) e1 e2
+evalEquation (P.Times e1 e2) d  = evalBothSides evalEquation d (*) e1 e2
 
-comparisonOpMapping :: Ord a => P.BoolOp -> (P.BoolOp, P.BoolOp, a -> a -> Bool)
-comparisonOpMapping (P.EqOP a b) = (a, b, (==))
-comparisonOpMapping (P.GreaterOP a b) = (a, b, (<))
-comparisonOpMapping (P.GreaterEqOP a b) = (a, b, (<=))
-comparisonOpMapping (P.LessOP a b) = (a, b, (>))
-comparisonOpMapping (P.LessEqOP a b) = (a, b, (>=))
-comparisonOpMapping (P.NotEqOP a b) = (a, b, (/=))
-comparisonOpMapping a = throw $ InvalidBooleanException $ "Invalid comparison operation: " ++ show a ++ " found."
+putInBool :: (DataType -> DataType -> Bool) -> DataType -> DataType -> DataType
+putInBool f a b = Boolean $ Just $ f a b
 
-boolOpMapping :: P.BoolOp -> (P.BoolOp, P.BoolOp, Bool -> Bool -> Bool)
-boolOpMapping (P.AndOP a b) = (a, b, (&&))
-boolOpMapping (P.OrOP a b) = (a, b, (||))
-boolOpMapping a = throw $ InvalidBooleanException $ "Invalid boolean operation: " ++ show a ++ " found."
-
-applyComparisonOp :: Ord a => (a -> a -> Bool) -> Maybe a -> Maybe a -> Bool
-applyComparisonOp op b1 b2 = fromMaybe False (op <$> b1 <*> b2)
-
-evalBool :: P.BoolOp -> ScopeData -> RetData
-evalBool (P.E1 e) sd = evalExpr e sd
-evalBool (P.NotOP b) sd = do
-    let (io, sd', Boolean val) = evalBool b sd
-    (io, sd', Boolean $ not <$> val)
-evalBool b sd = do
-    let (b1, b2, op) = comparisonOpMapping b
-    let (io, sd', ret) = evalBool b1 sd
-    let (io', sd'', ret') = evalBool b2 sd'
-    if eqConstr ret ret' then
-        (mergeIO io io', sd'', Boolean $ Just $ (applyComparisonOp op) <$> ret <*> ret')
-        else
-            (mergeIO io io', sd'', Boolean $ Just False)
-
+evalCompOp :: P.BoolCompOp -> ScopeData -> RetData
+evalCompOp (P.E1 e) sd              = evalExpr e sd
+evalCompOp (P.EqOP b1 b2) sd        = evalBothSides evalCompOp sd (putInBool (==)) b1 b2
+evalCompOp (P.GreaterOP b1 b2) sd   = evalBothSides evalCompOp sd (putInBool (>)) b1 b2
+evalCompOp (P.GreaterEqOP b1 b2) sd = evalBothSides evalCompOp sd (putInBool (>=)) b1 b2
+evalCompOp (P.LessOP b1 b2) sd      = evalBothSides evalCompOp sd (putInBool (<)) b1 b2
+evalCompOp (P.LessEqOP b1 b2) sd    = evalBothSides evalCompOp sd (putInBool (<=)) b1 b2
+evalCompOp (P.NotEqOP b1 b2) sd     = evalBothSides evalCompOp sd (putInBool (/=)) b1 b2

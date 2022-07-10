@@ -14,9 +14,13 @@ globalPrintS = BuiltIn "printS" [String Nothing] globalPrintImplementation
 globalPrintI :: FunData
 globalPrintI = BuiltIn "printI" [Int Nothing] globalPrintImplementation
 
+globalPrintB :: FunData
+globalPrintB = BuiltIn "printB" [Boolean Nothing] globalPrintImplementation
+
 globalPrintImplementation :: [DataType] -> ScopeData -> RetData
 globalPrintImplementation [String (Just s)] sd = (putStr s, sd, Void)
 globalPrintImplementation [Int (Just i)] sd = (putStr $ show i, sd, Void)
+globalPrintImplementation [Boolean (Just b)] sd = (putStr $ show b, sd, Void)
 globalPrintImplementation s sd =
   throw $
     MismatchedParameterException $
@@ -28,7 +32,10 @@ globalFuns =
   foldr
     (uncurry Map.insert)
     Map.empty
-    [("printS", globalPrintS), ("printI", globalPrintI)]
+    [ ("printS", globalPrintS),
+      ("printI", globalPrintI),
+      ("printB", globalPrintB)
+    ]
 
 globalDefData :: DefinedData
 globalDefData = DefinedData Map.empty globalFuns

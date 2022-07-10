@@ -1,9 +1,6 @@
-
-
-
-fun withExcitement(x: string): string {
-    return x + "!\n";
+fun dog(): bool {
+    return True;
 };
 
-printS(withExcitement("hi"));
-printI(11037);
+x: int = 3;
+printB(x >= 3);

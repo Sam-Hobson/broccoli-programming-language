@@ -7,45 +7,60 @@ import SyntaxParserFuncs
 
 -- BOOLEAN OPERATIONS
 
-boolean :: Parser Bool
-boolean = (tok (string "True") >> pure True) ||| (tok (string "False") >> pure False)
-
-eqOP :: Parser (BoolOp -> BoolOp -> BoolOp)
+eqOP :: Parser (BoolCompOp -> BoolCompOp -> BoolCompOp)
 eqOP = tok (string "==") >> pure EqOP
 
-greaterOP :: Parser (BoolOp -> BoolOp -> BoolOp)
+greaterOP :: Parser (BoolCompOp -> BoolCompOp -> BoolCompOp)
 greaterOP = tok (string ">") >> pure GreaterOP
 
-greaterEqOP :: Parser (BoolOp -> BoolOp -> BoolOp)
+greaterEqOP :: Parser (BoolCompOp -> BoolCompOp -> BoolCompOp)
 greaterEqOP = tok (string ">=") >> pure GreaterEqOP
 
-lessOP :: Parser (BoolOp -> BoolOp -> BoolOp)
+lessOP :: Parser (BoolCompOp -> BoolCompOp -> BoolCompOp)
 lessOP = tok (string "<") >> pure LessOP
 
-lessEqOP :: Parser (BoolOp -> BoolOp -> BoolOp)
+lessEqOP :: Parser (BoolCompOp -> BoolCompOp -> BoolCompOp)
 lessEqOP = tok (string "<=") >> pure LessEqOP
 
-notEqOP :: Parser (BoolOp -> BoolOp -> BoolOp)
+notEqOP :: Parser (BoolCompOp -> BoolCompOp -> BoolCompOp)
 notEqOP = tok (string "!=") >> pure NotEqOP
 
-andOP :: Parser (BoolOp -> BoolOp -> BoolOp)
+andOP :: Parser (BoolLogicalOp -> BoolLogicalOp -> BoolLogicalOp)
 andOP = tok (string "&&" ||| string "and") >> pure AndOP
 
-orOP :: Parser (BoolOp -> BoolOp -> BoolOp)
+orOP :: Parser (BoolLogicalOp -> BoolLogicalOp -> BoolLogicalOp)
 orOP = tok (string "||" ||| string "or") >> pure OrOP
 
-notOP :: Parser (BoolOp -> BoolOp)
+notOP :: Parser (BoolLogicalOp -> BoolLogicalOp)
 notOP = tok (string "not" ||| string "!") >> pure NotOP
 
-e1 :: Parser BoolOp
+e1 :: Parser BoolCompOp
 e1 = atomicOp E1
 
-boolOp :: Parser BoolOp
-boolOp = do
-  let ops = [eqOP, greaterOP, greaterEqOP, lessOP, lessEqOP, notEqOP, andOP, orOP]
-  r <- foldl chain ((notOP <*> e1) ||| e1) ops
+e2 :: Parser BoolLogicalOp
+e2 = atomicOp E2
+
+boolCompOp :: Parser BoolCompOp
+boolCompOp = do
+  let ops = [eqOP, greaterOP, greaterEqOP, lessOP, lessEqOP, notEqOP]
+  r <- foldl chain e1 ops
   case r of
     E1 e -> failed $ UnexpectedString (show e)
+    _ -> pure r
+
+boolLogicalOp :: Parser BoolLogicalOp
+boolLogicalOp = do
+  let ops = [andOP, orOP]
+  r <- foldl chain ((notOP <*> e2) ||| e2) ops
+  case r of
+    E2 e -> failed $ UnexpectedString (show e)
+    _ -> pure r
+
+equation :: Parser Equation
+equation = do
+  r <- foldl chain (atomicOp E) [times, add]
+  case r of
+    E e -> failed $ UnexpectedString (show e)
     _ -> pure r
 
 -- EQUATION OPERATIONS
@@ -62,17 +77,11 @@ times = op '*' >> pure Times
 add :: Parser (Equation -> Equation -> Equation)
 add = (op '+' >> pure Plus) ||| (op '-' >> pure Minus)
 
-equation :: Parser Equation
-equation = do
-  r <- foldl chain (atomicOp E) [times, add]
-  case r of
-    E e -> failed $ UnexpectedString (show e)
-    _ -> pure r
-
 atomicOp :: (Expr -> a) -> Parser a
 atomicOp f =
   (f . Number <$> tok integer)
     ||| (f . String <$> tok innerString)
+    ||| (f . Boolean <$> tok boolean)
     ||| (f . SymbolCall <$> tok functionCall)
     ||| (f . Symbol <$> idToken)
     ||| (f . Priority <$> priority)
@@ -92,8 +101,9 @@ expr :: Parser Expr
 expr =
     (Priority <$> priority)
     ||| (Equation <$> tok equation)
+    ||| (BoolCompOp <$> tok boolCompOp)
+    ||| (BoolLogicalOp <$> tok boolLogicalOp)
     ||| (Number <$> tok integer)
-    ||| (BoolOp <$> tok boolOp)
     ||| (Boolean <$> tok boolean)
     ||| (String <$> tok innerString)
     ||| (SymbolCall <$> tok functionCall)

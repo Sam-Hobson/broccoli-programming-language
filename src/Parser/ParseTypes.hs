@@ -9,28 +9,33 @@ data Equation
 
 type FunctionData = (String, [Expr])
 
-data BoolOp
-    = EqOP        BoolOp BoolOp
-    | GreaterOP   BoolOp BoolOp
-    | GreaterEqOP BoolOp BoolOp
-    | LessOP      BoolOp BoolOp
-    | LessEqOP    BoolOp BoolOp
-    | NotEqOP     BoolOp BoolOp
-    | AndOP       BoolOp BoolOp
-    | OrOP        BoolOp BoolOp
-    | NotOP       BoolOp
+data BoolCompOp
+    = EqOP        BoolCompOp BoolCompOp
+    | GreaterOP   BoolCompOp BoolCompOp
+    | GreaterEqOP BoolCompOp BoolCompOp
+    | LessOP      BoolCompOp BoolCompOp
+    | LessEqOP    BoolCompOp BoolCompOp
+    | NotEqOP     BoolCompOp BoolCompOp
     | E1          Expr
     deriving (Show, Eq)
 
+data BoolLogicalOp
+    = AndOP       BoolLogicalOp BoolLogicalOp
+    | OrOP        BoolLogicalOp BoolLogicalOp
+    | NotOP       BoolLogicalOp
+    | E2          Expr
+    deriving (Show, Eq)
+
 data Expr
-  = Number      Integer
-  | String      String
-  | Symbol      String
-  | Boolean     Bool
-  | BoolOp      BoolOp
-  | Equation    Equation
-  | SymbolCall  FunctionData
-  | Priority    Expr
+  = Number          Integer
+  | String          String
+  | Symbol          String
+  | Boolean         Bool
+  | BoolCompOp      BoolCompOp
+  | BoolLogicalOp   BoolLogicalOp
+  | Equation        Equation
+  | SymbolCall      FunctionData
+  | Priority        Expr
   | None
   deriving (Show, Eq)
 

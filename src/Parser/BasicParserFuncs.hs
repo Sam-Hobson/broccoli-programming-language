@@ -289,3 +289,9 @@ integer = do
   where
     p (Just (x, _)) = pure x
     p Nothing = P $ const $ Error UnexpectedEof
+
+
+-- Parse a boolean value.
+-- True for true. False for false.
+boolean :: Parser Bool
+boolean = (tok (string "True") >> pure True) ||| (tok (string "False") >> pure False)
