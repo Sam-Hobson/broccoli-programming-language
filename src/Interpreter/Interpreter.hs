@@ -14,6 +14,7 @@ import qualified ModuleParser
 import qualified ParseTypes as P
 import ScopeFuncs
 import UsefulFuncs
+import ParseTypes (Expr(Priority))
 
 interpret :: ScopeData -> [P.Statement] -> RetData
 interpret sd sa = (a, popFinalScopeData b, c)
@@ -73,6 +74,7 @@ evalFunArgs e sd =
 evalExpr :: P.Expr -> ScopeData -> RetData
 evalExpr (P.Symbol s) d = (pure (), d, varLookup s d)
 evalExpr (P.Equation e) d = evalEquation e d
+evalExpr (P.BoolOp b) d = evalBool b d
 evalExpr (P.SymbolCall (n, c)) d = do
   let (io, d', argVals) = evalFunArgs c d
   let fdata = funLookup n d
@@ -88,6 +90,7 @@ evalExpr (P.SymbolCall (n, c)) d = do
       BuiltIn fn input output -> do
         let (io', d'', retVal) = call fdata argVals d'
         (mergeIO io io', d'', retVal)
+evalExpr (Priority e) d = evalExpr e d
 evalExpr e d = (pure (), d, evalPrimitiveExpr e)
 
 -- Evaluates an equation. Operations on DataTypes are
@@ -107,3 +110,35 @@ evalEquation (P.Times e1 e2) d = do
   let r1 = evalEquation e1 d
   let r2 = evalEquation e2 (snd3 r1)
   (pure (), snd3 r2, trd3 r1 * trd3 r2)
+
+comparisonOpMapping :: Ord a => P.BoolOp -> (P.BoolOp, P.BoolOp, a -> a -> Bool)
+comparisonOpMapping (P.EqOP a b) = (a, b, (==))
+comparisonOpMapping (P.GreaterOP a b) = (a, b, (<))
+comparisonOpMapping (P.GreaterEqOP a b) = (a, b, (<=))
+comparisonOpMapping (P.LessOP a b) = (a, b, (>))
+comparisonOpMapping (P.LessEqOP a b) = (a, b, (>=))
+comparisonOpMapping (P.NotEqOP a b) = (a, b, (/=))
+comparisonOpMapping a = throw $ InvalidBooleanException $ "Invalid comparison operation: " ++ show a ++ " found."
+
+boolOpMapping :: P.BoolOp -> (P.BoolOp, P.BoolOp, Bool -> Bool -> Bool)
+boolOpMapping (P.AndOP a b) = (a, b, (&&))
+boolOpMapping (P.OrOP a b) = (a, b, (||))
+boolOpMapping a = throw $ InvalidBooleanException $ "Invalid boolean operation: " ++ show a ++ " found."
+
+applyComparisonOp :: Ord a => (a -> a -> Bool) -> Maybe a -> Maybe a -> Bool
+applyComparisonOp op b1 b2 = fromMaybe False (op <$> b1 <*> b2)
+
+evalBool :: P.BoolOp -> ScopeData -> RetData
+evalBool (P.E1 e) sd = evalExpr e sd
+evalBool (P.NotOP b) sd = do
+    let (io, sd', Boolean val) = evalBool b sd
+    (io, sd', Boolean $ not <$> val)
+evalBool b sd = do
+    let (b1, b2, op) = comparisonOpMapping b
+    let (io, sd', ret) = evalBool b1 sd
+    let (io', sd'', ret') = evalBool b2 sd'
+    if eqConstr ret ret' then
+        (mergeIO io io', sd'', Boolean $ Just $ (applyComparisonOp op) <$> ret <*> ret')
+        else
+            (mergeIO io io', sd'', Boolean $ Just False)
+

@@ -33,3 +33,8 @@ newtype ExpectedPrimitiveTypeException
 
 instance Exception ExpectedPrimitiveTypeException
 
+newtype InvalidBooleanException
+  = InvalidBooleanException String
+  deriving (Show, Typeable)
+
+instance Exception InvalidBooleanException

@@ -18,17 +18,16 @@ data BoolOp
     | NotEqOP     BoolOp BoolOp
     | AndOP       BoolOp BoolOp
     | OrOP        BoolOp BoolOp
-    | XorOP       BoolOp BoolOp
     | NotOP       BoolOp
     | E1          Expr
     deriving (Show, Eq)
 
 data Expr
   = Number      Integer
-  | Equation    Equation
-  | BoolOp      BoolOp
   | String      String
   | Symbol      String
+  | BoolOp      BoolOp
+  | Equation    Equation
   | SymbolCall  FunctionData
   | Priority    Expr
   | None
@@ -38,6 +37,7 @@ data Expr
 data Type
   = PInt
   | PString
+  | PBool
   | PVoid
   deriving (Show, Eq)
 

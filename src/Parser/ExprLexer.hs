@@ -26,13 +26,10 @@ notEqOP :: Parser (BoolOp -> BoolOp -> BoolOp)
 notEqOP = tok (string "!=") >> pure NotEqOP
 
 andOP :: Parser (BoolOp -> BoolOp -> BoolOp)
-andOP = tok (string "&&") >> pure AndOP
+andOP = tok (string "&&" ||| string "and") >> pure AndOP
 
 orOP :: Parser (BoolOp -> BoolOp -> BoolOp)
-orOP = tok (string "||") >> pure OrOP
-
-xorOP :: Parser (BoolOp -> BoolOp -> BoolOp)
-xorOP = tok (string "^") >> pure XorOP
+orOP = tok (string "||" ||| string "or") >> pure OrOP
 
 notOP :: Parser (BoolOp -> BoolOp)
 notOP = tok (string "not" ||| string "!") >> pure NotOP
@@ -42,7 +39,7 @@ e1 = atomicOp E1
 
 boolOp :: Parser BoolOp
 boolOp = do
-  let ops = [eqOP, greaterOP, greaterEqOP, lessOP, lessEqOP, notEqOP, andOP, orOP, xorOP]
+  let ops = [eqOP, greaterOP, greaterEqOP, lessOP, lessEqOP, notEqOP, andOP, orOP]
   r <- foldl chain ((notOP <*> e1) ||| e1) ops
   case r of
     E1 e -> failed $ UnexpectedString (show e)
@@ -85,7 +82,7 @@ priority = surround "(" expr ")"
 functionCall :: Parser FunctionData
 functionCall = do
   name <- idToken
-  content <- surround "(" (sepby (expr ||| pure None) (is ',')) ")"
+  content <- surround "(" (sepby (expr ||| pure None) (tok $ is ',')) ")"
   pure (name, content)
 
 expr :: Parser Expr

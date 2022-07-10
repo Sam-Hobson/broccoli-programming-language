@@ -37,4 +37,5 @@ addLast (a, b) c = (a, b, c)
 mapPTypes :: P.Type -> DataType
 mapPTypes P.PInt = Int Nothing
 mapPTypes P.PString = String Nothing
+mapPTypes P.PBool = Boolean Nothing
 mapPTypes P.PVoid = Void
