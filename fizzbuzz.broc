@@ -2,9 +2,24 @@
 
 fun fizzbuzz(x: int): void {
     if (x > 0) {
-        printI(x);
+        if (((x % 3) == 0) && ((x % 5) == 0)) {
+            print(x + ": FizzBuzz!");
+        } else if ((x % 3) == 0) {
+            print(x + ": Fizz")
+        } else if ((x % 5) == 0) {
+            print(x + ": Buzz")
+        };
         fizzbuzz(x - 1);
     };
 };
 
 fizzbuzz(100);
+
+/* fun fromX(x: int): void {
+    if (x > 0) {
+        printI(x);
+        fromX(x - 1);
+    };
+}; */
+
+/* fromX(100); */

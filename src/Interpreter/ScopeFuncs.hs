@@ -10,6 +10,7 @@ import Exceptions
 import InterpreterTypes
 import qualified ParseTypes as P
 import UsefulFuncs
+import DataTypes
 
 addVar :: ScopeData -> (String, DataType) -> ScopeData
 addVar NoScope (k, v) = NoScope

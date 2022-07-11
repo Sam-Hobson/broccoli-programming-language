@@ -33,6 +33,7 @@ library
         IgnoredChars,
         Interpreter,
         InterpreterTypes,
+        DataTypes,
         Exceptions,
         UsefulFuncs,
         GlobalScope,

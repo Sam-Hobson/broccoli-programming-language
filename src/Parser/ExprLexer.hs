@@ -56,24 +56,29 @@ boolLogicalOp = do
 
 equation :: Parser Equation
 equation = do
-  r <- foldl chain (atomicOp E) [times, add]
+  r <- foldl chain (atomicOp E) [modEq, times, intDivide, add]
   case r of
     E e -> failed $ UnexpectedString (show e)
     _ -> pure r
 
 -- EQUATION OPERATIONS
 
-op :: Char -> Parser Char -- parse a single char operator
-op c = do
-  is c
-  whitespace
-  pure c
+op :: String -> Parser String -- parse a single char operator
+op s = do
+  tok $ string s
+  pure s
+
+modEq :: Parser (Equation -> Equation -> Equation)
+modEq = op "%" >> pure Mod
+
+intDivide :: Parser (Equation -> Equation -> Equation)
+intDivide = op "//" >> pure IntDivide
 
 times :: Parser (Equation -> Equation -> Equation)
-times = op '*' >> pure Times
+times = op "*" >> pure Times
 
 add :: Parser (Equation -> Equation -> Equation)
-add = (op '+' >> pure Plus) ||| (op '-' >> pure Minus)
+add = (op "+" >> pure Plus) ||| (op "-" >> pure Minus)
 
 atomicOp :: (Expr -> a) -> Parser a
 atomicOp f =

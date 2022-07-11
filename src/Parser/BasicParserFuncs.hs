@@ -273,6 +273,13 @@ word = list (alpha ||| digit)
 maybeString :: String -> Parser String
 maybeString s = string s ||| string ""
 
+notString :: String -> Parser Char
+notString s = do
+    r <- maybeString s
+    case r of
+        "" -> pure ' '
+        _ -> P $ const $ Error $ UnexpectedString s
+
 -- Reads an integer from input and converts the integer part to a number.
 readInt :: String -> Maybe (Integer, String)
 readInt s = case reads s of

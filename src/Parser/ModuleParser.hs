@@ -37,9 +37,13 @@ function = do
 ret :: Parser Expr
 ret = tok (string "return") >> expr
 
+comment :: Parser String
+comment = surround "/*" (list $ noneof "*") "*/"
+
 statement :: Parser Statement
 statement =
-  (Ret <$> ret)
+    (comment >> (statement ||| pure Empty))
+    ||| (Ret <$> ret)
     ||| (Cond <$> conditionalIf)
     ||| (FD <$> function)
     ||| (FC <$> functionCall)

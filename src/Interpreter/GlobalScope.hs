@@ -7,6 +7,7 @@ import Exceptions (MismatchedParameterException (MismatchedParameterException))
 import InterpreterTypes
 import ScopeFuncs
 import UsefulFuncs
+import DataTypes
 
 globalPrint :: FunData
 globalPrint = BuiltIn "print" [String Nothing] globalPrintImplementation

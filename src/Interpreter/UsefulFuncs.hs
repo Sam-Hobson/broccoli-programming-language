@@ -8,6 +8,7 @@ import InterpreterTypes
 import Exceptions
 import Control.Exception (throw)
 import qualified ParseTypes as P
+import DataTypes
 
 import Debug.Trace
 import Data.Type.Equality (inner)

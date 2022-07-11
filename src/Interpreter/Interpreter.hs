@@ -15,6 +15,7 @@ import ParseTypes (Expr (Priority))
 import qualified ParseTypes as P
 import ScopeFuncs
 import UsefulFuncs
+import DataTypes
 
 interpret :: ScopeData -> [P.Statement] -> RetData
 interpret sd sa = (a, popFinalScopeData b, c)
@@ -118,6 +119,8 @@ evalEquation (P.E e) d = evalExpr e d
 evalEquation (P.Plus e1 e2) d = evalBothSides evalEquation d (+) e1 e2
 evalEquation (P.Minus e1 e2) d = evalBothSides evalEquation d (-) e1 e2
 evalEquation (P.Times e1 e2) d = evalBothSides evalEquation d (*) e1 e2
+evalEquation (P.Mod e1 e2) d = evalBothSides evalEquation d mod e1 e2
+evalEquation (P.IntDivide e1 e2) d = evalBothSides evalEquation d div e1 e2
 
 putInBool :: (DataType -> DataType -> Bool) -> DataType -> DataType -> DataType
 putInBool f a b = Boolean $ Just $ f a b

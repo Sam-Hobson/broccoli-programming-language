@@ -4,6 +4,8 @@ data Equation
   = Plus Equation Equation
   | Minus Equation Equation
   | Times Equation Equation
+  | Mod Equation Equation
+  | IntDivide Equation Equation
   | E Expr
   deriving (Show, Eq)
 
