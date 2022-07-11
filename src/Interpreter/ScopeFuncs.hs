@@ -1,17 +1,15 @@
-module ScopeFuncs
-where
+module ScopeFuncs where
 
+import Control.Applicative ((<|>))
+import Control.Exception (throw)
+import Data.Constructors.EqC (EqC (eqConstr))
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Control.Exception (throw)
-import Control.Applicative ((<|>))
-
-import InterpreterTypes
-import Exceptions
-import UsefulFuncs
 import Debug.Trace (trace)
+import Exceptions
+import InterpreterTypes
 import qualified ParseTypes as P
-import Data.Constructors.EqC (EqC(eqConstr))
+import UsefulFuncs
 
 addVar :: ScopeData -> (String, DataType) -> ScopeData
 addVar NoScope (k, v) = NoScope
@@ -27,21 +25,22 @@ addFun sd kv = sd {innerScope = addFun (innerScope sd) kv}
 -- This will be the portion of a scope that is defined within the namespace of a function.
 calcFunScope :: ScopeData -> FunData -> ScopeData
 calcFunScope sd fd = cfs sd (funNs fd)
-    where
-        cfs sd' ns
-            | sd' == NoScope = ScopeData (head ns) emptyData NoScope
-            | scope sd' /= head ns = ScopeData (head ns) emptyData NoScope
-            | scope sd' == head ns = sd' {innerScope = cfs (innerScope sd') (tail ns)}
-            | otherwise = throw $ UnboundSymbolException $ "Function: " ++ show (funNs fd) ++ " not found."
+  where
+    cfs sd' ns
+      | (sd' == NoScope) && null ns = NoScope -- This only applies for surface recursion.
+      | sd' == NoScope = ScopeData (head ns) emptyData NoScope
+      | scope sd' /= head ns = ScopeData (head ns) emptyData NoScope
+      | scope sd' == head ns = sd' {innerScope = cfs (innerScope sd') (tail ns)}
+      | otherwise = throw $ UnboundSymbolException $ "Function: " ++ show (funNs fd) ++ " not found."
 
 -- This function will loookup a value within a ScopeData and find the most recent definition
 -- of this value.
 scopedLookup :: (DefinedData -> Map String a) -> String -> ScopeData -> a
 scopedLookup f s sd = sl sd Nothing
-    where
-        sl NoScope Nothing  = throw $ UnboundSymbolException $ "Symbol: " ++ s ++ " not bound."
-        sl NoScope (Just a) = a
-        sl sd' a            = sl (innerScope sd') (Map.lookup s (f $ defData sd') <|> a)
+  where
+    sl NoScope Nothing = throw $ UnboundSymbolException $ "Symbol: " ++ s ++ " not bound."
+    sl NoScope (Just a) = a
+    sl sd' a = sl (innerScope sd') (Map.lookup s (f $ defData sd') <|> a)
 
 varLookup :: String -> ScopeData -> DataType
 varLookup = scopedLookup vars
@@ -53,12 +52,12 @@ funLookup = scopedLookup funs
 -- in the list of DataTypes.
 matchingArgTypes :: [DataType] -> FunData -> Bool
 matchingArgTypes d (FunData _ args _ _) = (length d' == length vals) && all (uncurry eqConstr) (zip d' vals)
-    where
-        vals = snd <$> args
-        d' = filter (Void /=) d
+  where
+    vals = snd <$> args
+    d' = filter (Void /=) d
 matchingArgTypes d (BuiltIn _ args _) = (length d' == length args) && all (uncurry eqConstr) (zip d' args)
-    where
-        d' = filter (Void /=) d
+  where
+    d' = filter (Void /=) d
 
 -- Return the entire namespace of a ScopeData. This is usually use with errors/debugging.
 traceScope :: ScopeData -> Namespace
@@ -71,10 +70,9 @@ traceScope s = scope s : traceScope (innerScope s)
 
 mergeScopeData :: ScopeData -> ScopeData -> ScopeData
 mergeScopeData newsd oldsd
-    | newsd == NoScope = oldsd
-    | scope newsd == scope oldsd = newsd {innerScope = mergeScopeData (innerScope newsd) (innerScope oldsd)}
-    | otherwise = throw $ ScopeException $ "Function returned with invalid scope: " ++ show (traceScope newsd)
-
+  | newsd == NoScope = oldsd
+  | scope newsd == scope oldsd = newsd {innerScope = mergeScopeData (innerScope newsd) (innerScope oldsd)}
+  | otherwise = throw $ ScopeException $ "Function returned with invalid scope: " ++ show (traceScope newsd)
 
 -- Removes the last inner scope data from a scope. This will usually be used when returning
 -- from a code segment to remove the segments scope from the ScopeData.
@@ -83,14 +81,14 @@ popFinalScopeData NoScope = NoScope
 popFinalScopeData (ScopeData a b NoScope) = NoScope
 popFinalScopeData sd = sd {innerScope = popFinalScopeData (innerScope sd)}
 
-
--- Shows a ScopeData in a more readable string.
+-- Shows a ScopeData in a more readable string. This is used for debugging.
 showSD :: ScopeData -> String
 showSD sd = show (traceScope sd) ++ showSD' sd 0 ++ "\n\n"
-    where
-        showSD' (ScopeData a b c) n = replicate n '\t' ++ show a ++ "\n\n"
-            ++ replicate n '\t' ++ show b ++ "\n\n"
-            ++ showSD' c (n + 1)
-        showSD' NoScope n = replicate n '\t' ++ show NoScope ++ "\n"
-
-
+  where
+    showSD' (ScopeData a b c) n =
+      replicate n '\t' ++ show a ++ "\n\n"
+        ++ replicate n '\t'
+        ++ show b
+        ++ "\n\n"
+        ++ showSD' c (n + 1)
+    showSD' NoScope n = replicate n '\t' ++ show NoScope ++ "\n"

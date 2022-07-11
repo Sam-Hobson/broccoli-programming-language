@@ -1,9 +1,0 @@
-fun dog(): bool {
-    return True;
-};
-
-if (3> 3) {
-    printS("Hi!");
-} else {
-    printS("Bye!");
-};

@@ -8,8 +8,8 @@ import InterpreterTypes
 import ScopeFuncs
 import UsefulFuncs
 
-globalPrintS :: FunData
-globalPrintS = BuiltIn "printS" [String Nothing] globalPrintImplementation
+globalPrint :: FunData
+globalPrint = BuiltIn "print" [String Nothing] globalPrintImplementation
 
 globalPrintI :: FunData
 globalPrintI = BuiltIn "printI" [Int Nothing] globalPrintImplementation
@@ -18,9 +18,9 @@ globalPrintB :: FunData
 globalPrintB = BuiltIn "printB" [Boolean Nothing] globalPrintImplementation
 
 globalPrintImplementation :: [DataType] -> ScopeData -> RetData
-globalPrintImplementation [String (Just s)] sd = (putStr s, sd, Void)
-globalPrintImplementation [Int (Just i)] sd = (putStr $ show i, sd, Void)
-globalPrintImplementation [Boolean (Just b)] sd = (putStr $ show b, sd, Void)
+globalPrintImplementation [String (Just s)] sd = (print s, sd, Void)
+globalPrintImplementation [Int (Just i)] sd = (print i, sd, Void)
+globalPrintImplementation [Boolean (Just b)] sd = (print b, sd, Void)
 globalPrintImplementation s sd =
   throw $
     MismatchedParameterException $
@@ -32,7 +32,7 @@ globalFuns =
   foldr
     (uncurry Map.insert)
     Map.empty
-    [ ("printS", globalPrintS),
+    [ ("print", globalPrint),
       ("printI", globalPrintI),
       ("printB", globalPrintB)
     ]

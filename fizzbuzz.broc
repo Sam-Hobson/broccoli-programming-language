@@ -1,0 +1,10 @@
+
+
+fun fizzbuzz(x: int): void {
+    if (x > 0) {
+        printI(x);
+        fizzbuzz(x - 1);
+    };
+};
+
+fizzbuzz(100);
