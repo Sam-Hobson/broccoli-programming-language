@@ -42,16 +42,14 @@ e2 = atomicOp E2
 
 boolCompOp :: Parser BoolCompOp
 boolCompOp = do
-  let ops = [eqOP, greaterOP, greaterEqOP, lessOP, lessEqOP, notEqOP]
-  r <- foldl chain e1 ops
+  r <- foldl chain e1 [eqOP, greaterOP, greaterEqOP, lessOP, lessEqOP, notEqOP]
   case r of
     E1 e -> failed $ UnexpectedString (show e)
     _ -> pure r
 
 boolLogicalOp :: Parser BoolLogicalOp
 boolLogicalOp = do
-  let ops = [andOP, orOP]
-  r <- foldl chain ((notOP <*> e2) ||| e2) ops
+  r <- foldl chain ((notOP <*> e2) ||| e2) [andOP, orOP]
   case r of
     E2 e -> failed $ UnexpectedString (show e)
     _ -> pure r
@@ -99,10 +97,10 @@ functionCall = do
 
 expr :: Parser Expr
 expr =
-    (Priority <$> priority)
-    ||| (Equation <$> tok equation)
+  (Equation <$> tok equation)
     ||| (BoolCompOp <$> tok boolCompOp)
     ||| (BoolLogicalOp <$> tok boolLogicalOp)
+    ||| (Priority <$> priority)
     ||| (Number <$> tok integer)
     ||| (Boolean <$> tok boolean)
     ||| (String <$> tok innerString)
