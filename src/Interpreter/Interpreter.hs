@@ -7,6 +7,7 @@ import Data.Constructors.TH (EqC (eqConstr))
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
+import DataTypes
 import Debug.Trace (trace)
 import Exceptions
 import InterpreterTypes
@@ -15,7 +16,6 @@ import ParseTypes (Expr (Priority))
 import qualified ParseTypes as P
 import ScopeFuncs
 import UsefulFuncs
-import DataTypes
 
 interpret :: ScopeData -> [P.Statement] -> RetData
 interpret sd sa = (a, popFinalScopeData b, c)
@@ -71,10 +71,17 @@ evalFunArgs e sd =
     (pure (), sd, [])
     e
 
-runAndMerge :: RetData -> (DataType -> DataType -> DataType) -> [P.Statement] -> RetData
-runAndMerge (io, sd, ret) f s = do
-  let (io', sd', ret') = interpret sd s
-  (mergeIO io io', mergeScopeData sd' sd, f ret ret')
+run :: ScopeData -> [(String, DataType)] -> Name -> [P.Statement] -> RetData
+run sd vars name s = do
+  let sd' = calcFunScope sd $ FunData (traceScope sd ++ [name]) [] Void []
+  let sd'' = foldl addVar sd' vars
+  let (io, sd''', ret) = interpret sd'' s
+  (io, mergeScopeData sd sd''', ret)
+
+runAndMerge :: RetData -> [(String, DataType)] -> Name -> (DataType -> DataType -> DataType) -> [P.Statement] -> RetData
+runAndMerge (io, sd, ret) vars name f s = do
+  let (io', sd', ret') = run sd vars name s
+  (mergeIO io io', sd', f ret ret')
 
 -- Evaluates an expression. Expressions can include a call to a function,
 -- this will execute the code of a function if it is called.
@@ -95,12 +102,8 @@ evalSymbolCall (n, c) d = do
   if not $ matchingArgTypes argVals fdata
     then throw $ MismatchedParameterException $ "Incorrect parameter types in: " ++ show (funNs fdata) ++ " given."
     else case fdata of
-      FunData ns av rtype code -> do
-        let d'' = calcFunScope d' fdata
-        -- Add all parameter variables to function scope.
-        let d''' = foldl addVar d'' (zip (fst <$> av) argVals)
-        let callResults = interpret d''' (content fdata) -- Call the function
-        (mergeIO io (fst3 callResults), mergeScopeData (snd3 callResults) d', trd3 callResults)
+      FunData ns av rtype code ->
+        runAndMerge (io, d', Void) (zip (fst <$> av) argVals) (last $ funNs fdata) const code
       BuiltIn fn input output -> do
         let (io', d'', retVal) = call fdata argVals d'
         (mergeIO io io', d'', retVal)
@@ -147,7 +150,7 @@ evalConditional (P.IfCond arg code next) sd =
     case ret of
       Boolean (Just v) ->
         if v
-          then runAndMerge (io, sd', ret) const code
+          then runAndMerge (io, sd', ret) [] "if/else if" const code
           else evalConditional next sd'
       v -> throw $ InvalidBooleanException $ "Invalid boolean expression given to if statement. Expressions returned: " ++ show v ++ "."
-evalConditional (P.ElseCond code) sd = interpret sd code
+evalConditional (P.ElseCond code) sd = run sd [] "else" code

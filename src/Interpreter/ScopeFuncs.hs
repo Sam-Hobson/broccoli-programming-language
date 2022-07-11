@@ -12,15 +12,26 @@ import qualified ParseTypes as P
 import UsefulFuncs
 import DataTypes
 
+-- addVar :: ScopeData -> (String, DataType) -> ScopeData
+-- addVar NoScope (k, v) = NoScope
+-- addVar (ScopeData name dd NoScope) (k, v) = ScopeData name (dd {vars = Map.insert k v (vars dd)}) NoScope
+-- addVar sd kv = sd {innerScope = addVar (innerScope sd) kv}
+
 addVar :: ScopeData -> (String, DataType) -> ScopeData
-addVar NoScope (k, v) = NoScope
+addVar NoScope (k, v) = throw $ ScopeException $ "Scope not defined while trying to define: " ++ show k ++ "."
 addVar (ScopeData name dd NoScope) (k, v) = ScopeData name (dd {vars = Map.insert k v (vars dd)}) NoScope
-addVar sd kv = sd {innerScope = addVar (innerScope sd) kv}
+addVar (ScopeData name dd id) (k, v)
+    = case Map.lookup k (vars dd) of
+        Nothing -> ScopeData name dd (addVar id (k, v))
+        Just _ -> ScopeData name (dd {vars = Map.insert k v (vars dd)}) id
 
 addFun :: ScopeData -> (String, FunData) -> ScopeData
-addFun NoScope (k, v) = NoScope
+addFun NoScope (k, v) = throw $ ScopeException $ "Scope not defined while trying to define: " ++ show k ++ "."
 addFun (ScopeData name dd NoScope) (k, v) = ScopeData name (dd {funs = Map.insert k v (funs dd)}) NoScope
-addFun sd kv = sd {innerScope = addFun (innerScope sd) kv}
+addFun (ScopeData name dd id) (k, v)
+    = case Map.lookup k (funs dd) of
+        Nothing -> ScopeData name dd (addFun id (k, v))
+        Just _ -> ScopeData name (dd {funs = Map.insert k v (funs dd)}) id
 
 -- Calculates the scope to be passed to a function.
 -- This will be the portion of a scope that is defined within the namespace of a function.
@@ -28,7 +39,7 @@ calcFunScope :: ScopeData -> FunData -> ScopeData
 calcFunScope sd fd = cfs sd (funNs fd)
   where
     cfs sd' ns
-      | (sd' == NoScope) && null ns = NoScope -- This only applies for surface recursion.
+      | (sd' == NoScope) && null ns = NoScope -- This only applies for basic recursion.
       | sd' == NoScope = ScopeData (head ns) emptyData NoScope
       | scope sd' /= head ns = ScopeData (head ns) emptyData NoScope
       | scope sd' == head ns = sd' {innerScope = cfs (innerScope sd') (tail ns)}
@@ -70,9 +81,9 @@ traceScope s = scope s : traceScope (innerScope s)
 -- be a subset of the scope of the second ScopeData.
 
 mergeScopeData :: ScopeData -> ScopeData -> ScopeData
-mergeScopeData newsd oldsd
+mergeScopeData oldsd newsd
   | newsd == NoScope = oldsd
-  | scope newsd == scope oldsd = newsd {innerScope = mergeScopeData (innerScope newsd) (innerScope oldsd)}
+  | scope newsd == scope oldsd = newsd {innerScope = mergeScopeData (innerScope oldsd) (innerScope newsd)}
   | otherwise = throw $ ScopeException $ "Function returned with invalid scope: " ++ show (traceScope newsd)
 
 -- Removes the last inner scope data from a scope. This will usually be used when returning
