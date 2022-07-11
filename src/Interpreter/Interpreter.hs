@@ -73,10 +73,16 @@ evalFunArgs e sd =
 -- this will execute the code of a function if it is called.
 -- Will merge ScopeData after an expression.
 evalExpr :: P.Expr -> ScopeData -> RetData
-evalExpr (P.Symbol s) d = (pure (), d, varLookup s d)
-evalExpr (P.Equation e) d = evalEquation e d
-evalExpr (P.BoolCompOp b) d = evalCompOp b d
-evalExpr (P.SymbolCall (n, c)) d = do
+evalExpr (P.Symbol s) d             = (pure (), d, varLookup s d)
+evalExpr (P.Equation e) d           = evalEquation e d
+evalExpr (P.BoolCompOp b) d         = evalCompOp b d
+evalExpr (P.BoolLogicalOp b) d      = evalLogicalOp b d
+evalExpr (P.SymbolCall fd) d        = evalSymbolCall fd d
+evalExpr (Priority e) d             = evalExpr e d
+evalExpr e d                        = (pure (), d, evalPrimitiveExpr e)
+
+evalSymbolCall :: P.FunctionData -> ScopeData -> RetData
+evalSymbolCall (n, c) d = do
   let (io, d', argVals) = evalFunArgs c d
   let fdata = funLookup n d
   if not $ matchingArgTypes argVals fdata
@@ -91,8 +97,6 @@ evalExpr (P.SymbolCall (n, c)) d = do
       BuiltIn fn input output -> do
         let (io', d'', retVal) = call fdata argVals d'
         (mergeIO io io', d'', retVal)
-evalExpr (Priority e) d = evalExpr e d
-evalExpr e d = (pure (), d, evalPrimitiveExpr e)
 
 evalBothSides :: (a -> ScopeData -> RetData) -> ScopeData -> (DataType -> DataType -> DataType) -> a -> a -> RetData
 evalBothSides f sd rf a b = do
@@ -120,3 +124,9 @@ evalCompOp (P.GreaterEqOP b1 b2) sd = evalBothSides evalCompOp sd (putInBool (>=
 evalCompOp (P.LessOP b1 b2) sd      = evalBothSides evalCompOp sd (putInBool (<)) b1 b2
 evalCompOp (P.LessEqOP b1 b2) sd    = evalBothSides evalCompOp sd (putInBool (<=)) b1 b2
 evalCompOp (P.NotEqOP b1 b2) sd     = evalBothSides evalCompOp sd (putInBool (/=)) b1 b2
+
+evalLogicalOp :: P.BoolLogicalOp -> ScopeData -> RetData
+evalLogicalOp (P.E2 e) sd = evalExpr e sd
+evalLogicalOp (P.AndOP a b) sd = evalBothSides evalLogicalOp sd (putInBool (&&&)) a b
+evalLogicalOp (P.OrOP a b) sd = evalBothSides evalLogicalOp sd (putInBool (|||)) a b
+evalLogicalOp (P.NotOP a) sd = (Boolean . Just) . (!!!) <$> evalLogicalOp a sd

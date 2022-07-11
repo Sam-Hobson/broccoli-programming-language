@@ -3,4 +3,4 @@ fun dog(): bool {
 };
 
 x: int = 3;
-printB((3+4) == ((5 * 2) - 3));
+printB(True and False);

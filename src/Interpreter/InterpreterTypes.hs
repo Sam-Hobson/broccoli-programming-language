@@ -8,7 +8,6 @@ import Control.Exception (throw)
 import Data.Constructors.TH (deriveEqC)
 import Data.Data (Data)
 import Data.Map (Map)
-import Data.Bool
 import qualified Data.Map as Map
 import Exceptions
 import qualified ParseTypes as P
@@ -22,6 +21,19 @@ data DataType
     (Show, Eq, Data)
 
 $(deriveEqC ''DataType)
+
+class LogicalBool a where
+    (&&&)   :: a -> a -> Bool
+    (|||)   :: a -> a -> Bool
+    (!!!)    :: a -> Bool
+
+instance LogicalBool DataType where
+    Boolean (Just a) &&& Boolean (Just b) = a && b
+    a &&& b = throw $ InvalidBooleanException $ "Invalid comparison attempted (&&&) between: " ++ show a ++ " and " ++ show b ++ "."
+    Boolean (Just a) ||| Boolean (Just b) = a || b
+    a ||| b = throw $ InvalidBooleanException $ "Invalid comparison attempted (|||) between: " ++ show a ++ " and " ++ show b ++ "."
+    (!!!) (Boolean (Just a)) = not a
+    (!!!) a = throw $ InvalidBooleanException $ "Invalid comparison attempted (!!!): " ++ show a ++ "."
 
 instance Ord DataType where
     Int (Just a) <= Int (Just b)            = a <= b
