@@ -2,5 +2,8 @@ fun dog(): bool {
     return True;
 };
 
-x: int = 3;
-printB(True and False);
+if (3> 3) {
+    printS("Hi!");
+} else {
+    printS("Bye!");
+};

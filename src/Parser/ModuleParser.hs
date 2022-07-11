@@ -1,11 +1,29 @@
 module ModuleParser where
 
 import BasicParserFuncs
-import ExprLexer (functionCall, expr)
-import ParseTypes (Function, Statement (..), Expr)
+import ExprLexer (expr, functionCall)
+import ParseTypes
 import Parser
 import SyntaxParserFuncs (idToken, typeToken)
 import VarLexer (varDeclaration, varInitialisation, varParser)
+
+import Control.Applicative ((<|>))
+
+conditionalIf :: Parser Conditional
+conditionalIf = conditionalIf' "if"
+  where
+    conditionalIf' s =
+      do
+        tok $ string s
+        cond <- surround "(" expr ")"
+        content <- surround "{" codeModule "}"
+        nextCond <- conditionalIf' "else if" ||| conditionalElse ||| pure (ElseCond [])
+        pure $ IfCond cond content nextCond
+
+conditionalElse :: Parser Conditional
+conditionalElse = do
+    tok $ string "else"
+    ElseCond <$> surround "{" codeModule "}"
 
 function :: Parser Function
 function = do
@@ -21,7 +39,8 @@ ret = tok (string "return") >> expr
 
 statement :: Parser Statement
 statement =
-    (Ret <$> ret)
+  (Ret <$> ret)
+    ||| (Cond <$> conditionalIf)
     ||| (FD <$> function)
     ||| (FC <$> functionCall)
     ||| (V <$> varParser)

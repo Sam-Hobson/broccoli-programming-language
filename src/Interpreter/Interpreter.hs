@@ -11,10 +11,10 @@ import Debug.Trace (trace)
 import Exceptions
 import InterpreterTypes
 import qualified ModuleParser
+import ParseTypes (Expr (Priority))
 import qualified ParseTypes as P
 import ScopeFuncs
 import UsefulFuncs
-import ParseTypes (Expr(Priority))
 
 interpret :: ScopeData -> [P.Statement] -> RetData
 interpret sd sa = (a, popFinalScopeData b, c)
@@ -34,8 +34,9 @@ statementIn :: ScopeData -> P.Statement -> (IO (), ScopeData, Maybe DataType)
 statementIn sd (P.FD s) = (pure (), declareFun sd s, Nothing)
 statementIn sd (P.FC s) = Nothing <$ evalExpr (P.SymbolCall s) sd
 statementIn sd (P.V v) = addLast (declareVar sd v) Nothing
-statementIn sd P.Empty = (pure (), sd, Nothing)
 statementIn sd (P.Ret r) = Just <$> evalExpr r sd
+statementIn sd (P.Cond c) = Nothing <$ evalConditional c sd
+statementIn sd P.Empty = (pure (), sd, Nothing)
 
 declareVar :: ScopeData -> P.Var -> (IO (), ScopeData)
 declareVar sd (a, b, c) = do
@@ -53,9 +54,9 @@ argDefinition (s, t, e) = (s, f $ evalPrimitiveExpr e)
     f a = a
 
 evalPrimitiveExpr :: P.Expr -> DataType
-evalPrimitiveExpr P.None        = Void
-evalPrimitiveExpr (P.Number i)  = Int $ Just i
-evalPrimitiveExpr (P.String s)  = String $ Just s
+evalPrimitiveExpr P.None = Void
+evalPrimitiveExpr (P.Number i) = Int $ Just i
+evalPrimitiveExpr (P.String s) = String $ Just s
 evalPrimitiveExpr (P.Boolean b) = Boolean $ Just b
 evalPrimitiveExpr a = throw $ ExpectedPrimitiveTypeException $ "Expected primitive type. " ++ show a ++ " provided instead."
 
@@ -69,17 +70,22 @@ evalFunArgs e sd =
     (pure (), sd, [])
     e
 
+runAndMerge :: RetData -> (DataType -> DataType -> DataType) -> [P.Statement] -> RetData
+runAndMerge (io, sd, ret) f s = do
+  let (io', sd', ret') = interpret sd s
+  (mergeIO io io', mergeScopeData sd' sd, f ret ret')
+
 -- Evaluates an expression. Expressions can include a call to a function,
 -- this will execute the code of a function if it is called.
 -- Will merge ScopeData after an expression.
 evalExpr :: P.Expr -> ScopeData -> RetData
-evalExpr (P.Symbol s) d             = (pure (), d, varLookup s d)
-evalExpr (P.Equation e) d           = evalEquation e d
-evalExpr (P.BoolCompOp b) d         = evalCompOp b d
-evalExpr (P.BoolLogicalOp b) d      = evalLogicalOp b d
-evalExpr (P.SymbolCall fd) d        = evalSymbolCall fd d
-evalExpr (Priority e) d             = evalExpr e d
-evalExpr e d                        = (pure (), d, evalPrimitiveExpr e)
+evalExpr (P.Symbol s) d = (pure (), d, varLookup s d)
+evalExpr (P.Equation e) d = evalEquation e d
+evalExpr (P.BoolCompOp b) d = evalCompOp b d
+evalExpr (P.BoolLogicalOp b) d = evalLogicalOp b d
+evalExpr (P.SymbolCall fd) d = evalSymbolCall fd d
+evalExpr (Priority e) d = evalExpr e d
+evalExpr e d = (pure (), d, evalPrimitiveExpr e)
 
 evalSymbolCall :: P.FunctionData -> ScopeData -> RetData
 evalSymbolCall (n, c) d = do
@@ -100,33 +106,45 @@ evalSymbolCall (n, c) d = do
 
 evalBothSides :: (a -> ScopeData -> RetData) -> ScopeData -> (DataType -> DataType -> DataType) -> a -> a -> RetData
 evalBothSides f sd rf a b = do
-    let (io, sd', ret) = f a sd
-    let (io', sd'', ret') = f b sd'
-    (mergeIO io io', sd'', rf ret ret')
+  let (io, sd', ret) = f a sd
+  let (io', sd'', ret') = f b sd'
+  (mergeIO io io', sd'', rf ret ret')
 
 -- Evaluates an equation. Operations on DataTypes are
 -- handled through the instance of the Num dataclass on
 -- DataType.
 evalEquation :: P.Equation -> ScopeData -> RetData
-evalEquation (P.E e) d          = evalExpr e d
-evalEquation (P.Plus e1 e2) d   = evalBothSides evalEquation d (+) e1 e2
-evalEquation (P.Minus e1 e2) d  = evalBothSides evalEquation d (-) e1 e2
-evalEquation (P.Times e1 e2) d  = evalBothSides evalEquation d (*) e1 e2
+evalEquation (P.E e) d = evalExpr e d
+evalEquation (P.Plus e1 e2) d = evalBothSides evalEquation d (+) e1 e2
+evalEquation (P.Minus e1 e2) d = evalBothSides evalEquation d (-) e1 e2
+evalEquation (P.Times e1 e2) d = evalBothSides evalEquation d (*) e1 e2
 
 putInBool :: (DataType -> DataType -> Bool) -> DataType -> DataType -> DataType
 putInBool f a b = Boolean $ Just $ f a b
 
 evalCompOp :: P.BoolCompOp -> ScopeData -> RetData
-evalCompOp (P.E1 e) sd              = evalExpr e sd
-evalCompOp (P.EqOP b1 b2) sd        = evalBothSides evalCompOp sd (putInBool (==)) b1 b2
-evalCompOp (P.GreaterOP b1 b2) sd   = evalBothSides evalCompOp sd (putInBool (>)) b1 b2
+evalCompOp (P.E1 e) sd = evalExpr e sd
+evalCompOp (P.EqOP b1 b2) sd = evalBothSides evalCompOp sd (putInBool (==)) b1 b2
+evalCompOp (P.GreaterOP b1 b2) sd = evalBothSides evalCompOp sd (putInBool (>)) b1 b2
 evalCompOp (P.GreaterEqOP b1 b2) sd = evalBothSides evalCompOp sd (putInBool (>=)) b1 b2
-evalCompOp (P.LessOP b1 b2) sd      = evalBothSides evalCompOp sd (putInBool (<)) b1 b2
-evalCompOp (P.LessEqOP b1 b2) sd    = evalBothSides evalCompOp sd (putInBool (<=)) b1 b2
-evalCompOp (P.NotEqOP b1 b2) sd     = evalBothSides evalCompOp sd (putInBool (/=)) b1 b2
+evalCompOp (P.LessOP b1 b2) sd = evalBothSides evalCompOp sd (putInBool (<)) b1 b2
+evalCompOp (P.LessEqOP b1 b2) sd = evalBothSides evalCompOp sd (putInBool (<=)) b1 b2
+evalCompOp (P.NotEqOP b1 b2) sd = evalBothSides evalCompOp sd (putInBool (/=)) b1 b2
 
 evalLogicalOp :: P.BoolLogicalOp -> ScopeData -> RetData
 evalLogicalOp (P.E2 e) sd = evalExpr e sd
 evalLogicalOp (P.AndOP a b) sd = evalBothSides evalLogicalOp sd (putInBool (&&&)) a b
 evalLogicalOp (P.OrOP a b) sd = evalBothSides evalLogicalOp sd (putInBool (|||)) a b
 evalLogicalOp (P.NotOP a) sd = (Boolean . Just) . (!!!) <$> evalLogicalOp a sd
+
+evalConditional :: P.Conditional -> ScopeData -> RetData
+evalConditional (P.IfCond arg code next) sd =
+  do
+    let (io, sd', ret) = evalExpr arg sd
+    case ret of
+      Boolean (Just v) ->
+        if v
+          then runAndMerge (io, sd', ret) const code
+          else evalConditional next sd'
+      v -> throw $ InvalidBooleanException $ "Invalid boolean expression given to if statement. Expressions returned: " ++ show v ++ "."
+evalConditional (P.ElseCond code) sd = interpret sd code

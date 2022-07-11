@@ -1,6 +1,7 @@
 {-# LANGUAGE InstanceSigs #-}
 
 module Parser where
+import Control.Applicative (Alternative)
 
 data ParseError
   = UnexpectedEof
