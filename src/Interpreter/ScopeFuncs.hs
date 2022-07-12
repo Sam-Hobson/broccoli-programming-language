@@ -12,25 +12,30 @@ import qualified ParseTypes as P
 import UsefulFuncs
 import DataTypes
 
--- addVar :: ScopeData -> (String, DataType) -> ScopeData
--- addVar NoScope (k, v) = NoScope
--- addVar (ScopeData name dd NoScope) (k, v) = ScopeData name (dd {vars = Map.insert k v (vars dd)}) NoScope
--- addVar sd kv = sd {innerScope = addVar (innerScope sd) kv}
-
 addVar :: ScopeData -> (String, DataType) -> ScopeData
-addVar NoScope (k, v) = throw $ ScopeException $ "Scope not defined while trying to define: " ++ show k ++ "."
+addVar NoScope (k, v) = throw $ ScopeException $ "Scope not defined while trying to declare: " ++ show k ++ "."
 addVar (ScopeData name dd NoScope) (k, v) = ScopeData name (dd {vars = Map.insert k v (vars dd)}) NoScope
-addVar (ScopeData name dd id) (k, v)
-    = case Map.lookup k (vars dd) of
-        Nothing -> ScopeData name dd (addVar id (k, v))
-        Just _ -> ScopeData name (dd {vars = Map.insert k v (vars dd)}) id
+addVar sd kv = sd {innerScope = addVar (innerScope sd) kv}
 
 addFun :: ScopeData -> (String, FunData) -> ScopeData
-addFun NoScope (k, v) = throw $ ScopeException $ "Scope not defined while trying to define: " ++ show k ++ "."
+addFun NoScope (k, v) = throw $ ScopeException $ "Scope not defined while trying to declare: " ++ show k ++ "."
 addFun (ScopeData name dd NoScope) (k, v) = ScopeData name (dd {funs = Map.insert k v (funs dd)}) NoScope
-addFun (ScopeData name dd id) (k, v)
+addFun sd kv = sd {innerScope = addFun (innerScope sd) kv}
+
+assignVar :: ScopeData -> (String, DataType) -> ScopeData
+assignVar NoScope (k, v) = throw $ ScopeException $ "Scope not defined while trying to assign: " ++ show k ++ "."
+assignVar (ScopeData name dd NoScope) (k, v) = ScopeData name (dd {vars = Map.insert k v (vars dd)}) NoScope
+assignVar (ScopeData name dd id) (k, v)
+    = case Map.lookup k (vars dd) of
+        Nothing -> ScopeData name dd (assignVar id (k, v))
+        Just _ -> ScopeData name (dd {vars = Map.insert k v (vars dd)}) id
+
+assignFun :: ScopeData -> (String, FunData) -> ScopeData
+assignFun NoScope (k, v) = throw $ ScopeException $ "Scope not defined while trying to assign: " ++ show k ++ "."
+assignFun (ScopeData name dd NoScope) (k, v) = ScopeData name (dd {funs = Map.insert k v (funs dd)}) NoScope
+assignFun (ScopeData name dd id) (k, v)
     = case Map.lookup k (funs dd) of
-        Nothing -> ScopeData name dd (addFun id (k, v))
+        Nothing -> ScopeData name dd (assignFun id (k, v))
         Just _ -> ScopeData name (dd {funs = Map.insert k v (funs dd)}) id
 
 -- Calculates the scope to be passed to a function.

@@ -54,6 +54,8 @@ data Type
   | PVoid
   deriving (Show, Eq)
 
+type Assignment = (String, Expr)
+
 type Var = (String, Type, Expr)
 
 type Function = (String, [Var], Type, [Statement])
@@ -61,7 +63,8 @@ type Function = (String, [Var], Type, [Statement])
 data Statement
   = FD Function
   | FC FunctionData
-  | V Var
+  | VD Var
+  | VA Assignment
   | Ret Expr
   | Cond Conditional
   | Empty

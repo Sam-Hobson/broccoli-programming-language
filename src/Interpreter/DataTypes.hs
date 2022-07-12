@@ -1,5 +1,4 @@
 {-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module DataTypes
@@ -40,8 +39,8 @@ instance Real DataType where
     toRational a = throw $ InvalidEquationException $ "Invalid math operator used on data: " ++ show a ++ "."
 
 instance Enum DataType where
-    fromEnum = fromJust . flip lookup [(Int Nothing, 0), (String Nothing, 1), (Boolean Nothing, 2), (Void, 3)]
-    toEnum = fromJust . flip lookup (map swap [(Int Nothing, 0), (String Nothing, 1), (Boolean Nothing, 2), (Void, 3)])
+    fromEnum = fromJust . flip lookup table
+    toEnum = fromJust . flip lookup (map swap table)
 table :: [(DataType, Int)]
 table = [(Int Nothing, 0), (String Nothing, 1), (Boolean Nothing, 2), (Void, 3)]
 

@@ -4,7 +4,7 @@ import BasicParserFuncs
 import ExprLexer ( expr )
 import Parser
 import SyntaxParserFuncs ( typeToken, idToken )
-import ParseTypes ( Var(..), Expr(..))
+import ParseTypes ( Var(..), Expr(..), Assignment)
 
 -- Parses the assignment. This is everything including and beyond
 -- the equals sign.
@@ -16,7 +16,7 @@ import ParseTypes ( Var(..), Expr(..))
 -- <Parsed: Equation (Plus (Number 1) (Times (Number 2) (Number 3)))> <Remaining: "">
 assignmentToken :: Parser Expr
 assignmentToken =
-  tok (is '=') >> expr
+  tok (is '=') >> tok expr
 
 -- Parses the declaration of a variable.
 --
@@ -25,9 +25,10 @@ assignmentToken =
 varDeclaration :: Parser Var
 varDeclaration = do
   whitespace
-  a <- idToken
-  b <- typeToken
-  pure (a, b, None)
+  a <- tok typeToken
+  b <- tok idToken
+  c <- assignmentToken ||| pure None
+  pure (b, a, c)
 
 -- updateVarExpr :: Var -> Expr -> Var
 -- updateVarExpr (Var s t _) = Var s t
@@ -42,12 +43,8 @@ varDeclaration = do
 --
 -- >>> parse varInitialisation "num1: string = \"salad\";"
 -- <Parsed: Var {tokenId = "num1", dataType = PString, value = String "salad"}> <Remaining: "">
-varInitialisation :: Parser Var
-varInitialisation = do
-  (a, b, _) <- varDeclaration
-  c <- assignmentToken
-  pure (a, b, c)
-  
-
-varParser :: Parser  Var
-varParser = varInitialisation ||| varDeclaration
+varAssignment :: Parser Assignment
+varAssignment = do
+  a <- tok idToken
+  b <- tok assignmentToken
+  pure (a, b)

@@ -1,4 +1,4 @@
-fun fizzbuzz(x: int): void {
+/* fun fizzbuzz(x: int): void {
     if (x > 0) {
         output: string = "";
         if ((x % 3) == 0) {
@@ -15,5 +15,37 @@ fun fizzbuzz(x: int): void {
     };
 };
 
-fizzbuzz(100);
+fizzbuzz(100); */
+
+
+
+/* fun x(y: int): void {
+    printI(y);
+    x(y + 1);
+};
+
+x(0); */
+
+
+/* Should see "True False" */
+Bool x = False;
+
+fun dog(): Void {
+    Bool x = True;
+    printB(x);
+};
+
+dog();
+printB(x);
+
+/* Should see "True True" */
+Bool x = False;
+
+fun dog(): Void {
+    x = True;
+    printB(x);
+};
+
+dog();
+printB(x);
 

@@ -3,6 +3,13 @@ module Exceptions where
 import Control.Exception (Exception)
 import Data.Data (Typeable)
 
+newtype NonMatchingTypeException
+  = NonMatchingTypeException String
+  deriving (Show, Typeable)
+
+instance Exception NonMatchingTypeException
+
+
 newtype UnboundSymbolException
   = UnboundSymbolException String
   deriving (Show, Typeable)

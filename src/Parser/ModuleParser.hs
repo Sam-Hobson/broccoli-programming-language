@@ -5,7 +5,7 @@ import ExprLexer (expr, functionCall)
 import ParseTypes
 import Parser
 import SyntaxParserFuncs (idToken, typeToken)
-import VarLexer (varDeclaration, varInitialisation, varParser)
+import VarLexer
 
 import Control.Applicative ((<|>))
 
@@ -29,13 +29,13 @@ function :: Parser Function
 function = do
   tok $ string "fun"
   name <- idToken
-  args <- surround "(" (sepby varParser $ tok $ is ',') ")"
-  rtype <- typeToken
+  args <- surround "(" (sepby varDeclaration $ tok $ is ',') ")"
+  rtype <- tok (string ":") >> typeToken
   funContent <- surround "{" codeModule "}"
   pure (name, args, rtype, funContent)
 
 ret :: Parser Expr
-ret = tok (string "return") >> expr
+ret = tok (string "return") >> (expr ||| pure None)
 
 comment :: Parser String
 comment = surround "/*" (list $ noneof "*") "*/"
@@ -47,7 +47,8 @@ statement =
     ||| (Cond <$> conditionalIf)
     ||| (FD <$> function)
     ||| (FC <$> functionCall)
-    ||| (V <$> varParser)
+    ||| (VD <$> varDeclaration)
+    ||| (VA <$> varAssignment)
 
 -- Parses code with ';' separating each statement.
 --

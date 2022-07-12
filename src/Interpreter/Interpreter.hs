@@ -34,16 +34,20 @@ interpret sd sa = (a, popFinalScopeData b, c)
 statementIn :: ScopeData -> P.Statement -> (IO (), ScopeData, Maybe DataType)
 statementIn sd (P.FD s) = (pure (), declareFun sd s, Nothing)
 statementIn sd (P.FC s) = Nothing <$ evalExpr (P.SymbolCall s) sd
-statementIn sd (P.V v) = addLast (declareVar sd v) Nothing
+statementIn sd (P.VD (s, t, e)) = addLast (insertVar sd (s, mapPTypes t, e) addVar) Nothing
+statementIn sd (P.VA (s, e)) = addLast (insertVar sd (s, varLookup s sd, e) assignVar) Nothing
 statementIn sd (P.Ret r) = Just <$> evalExpr r sd
 statementIn sd (P.Cond c) = Nothing <$ evalConditional c sd
 statementIn sd P.Empty = (pure (), sd, Nothing)
 
-declareVar :: ScopeData -> P.Var -> (IO (), ScopeData)
-declareVar sd (a, b, c) = do
-  let (io, sd', dt) = evalExpr c sd
-  let sd'' = addVar sd' (a, dt)
-  (io, sd'')
+insertVar :: ScopeData -> (String, DataType, Expr) -> (ScopeData -> (String, DataType) -> ScopeData) -> (IO (), ScopeData)
+insertVar sd (s, dt, e) f = do
+  let (io, sd', dt') = evalExpr e sd
+  if not $ eqConstr dt dt'
+    then throw $ NonMatchingTypeException $ "Expected type: " ++ show dt ++ " does not match assigned type: " ++ show dt' ++ "."
+    else do
+      let sd'' = f sd' (s, dt')
+      (io, sd'')
 
 declareFun :: ScopeData -> P.Function -> ScopeData
 declareFun sd (a, b, c, d) = addFun sd (a, FunData (traceScope sd ++ [a]) (argDefinition <$> b) (mapPTypes c) d)

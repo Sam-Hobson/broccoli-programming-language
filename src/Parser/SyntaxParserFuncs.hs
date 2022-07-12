@@ -1,9 +1,8 @@
-module SyntaxParserFuncs 
-where
+module SyntaxParserFuncs where
 
-import Parser
 import BasicParserFuncs
-import ParseTypes ( Type(..) )
+import ParseTypes (Type (..))
+import Parser
 
 -- Parses the datatype of a variable.
 --
@@ -11,11 +10,10 @@ import ParseTypes ( Type(..) )
 -- <Parsed: PInt> <Remaining: "= 3">
 typeToken :: Parser Type
 typeToken =
-  tok (is ':')
-    >> (tok (string "int") >> pure PInt)
-    ||| (tok (string "string") >> pure PString)
-    ||| (tok (string "bool") >> pure PBool)
-    ||| (tok (string "void") >> pure PVoid)
+  (tok (string "Int") >> pure PInt)
+    ||| (tok (string "String") >> pure PString)
+    ||| (tok (string "Bool") >> pure PBool)
+    ||| (tok (string "Void") >> pure PVoid)
 
 -- Parses the next word/id. This word can contain
 -- numbers but cannot start with one.
@@ -24,7 +22,7 @@ typeToken =
 -- <Parsed: "var1"> <Remaining: ": int = 3;">
 idToken :: Parser String
 idToken = do
-  c <- alpha
+  c <- lower
   rest <- tok word
   pure $ c : rest
 
@@ -38,5 +36,3 @@ chain p op = p >>= rest
           rest (f a b)
       )
         ||| pure a
-
-
