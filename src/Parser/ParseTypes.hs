@@ -42,7 +42,7 @@ data Expr
   deriving (Show, Eq)
 
 data Repeating
-  =  For Declaration Expr Expr [Statement]
+  =  For Declaration BoolCompOp Assignment [Statement]
   |  While Expr [Statement]
   deriving (Show, Eq)
 

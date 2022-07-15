@@ -1,7 +1,7 @@
 module ModuleParser where
 
 import BasicParserFuncs
-import ExprLexer (expr, functionCall)
+import ExprLexer (expr, functionCall, boolCompOp)
 import ParseTypes
 import Parser
 import SyntaxParserFuncs (idToken, typeToken)
@@ -58,9 +58,9 @@ for = do
         p = do
             a <- tok varDeclaration
             tok $ string ","
-            b <- tok expr
+            b <- tok boolCompOp
             tok $ string ","
-            c <- tok expr
+            c <- tok varAssignment
             pure (a, b, c)
 
 statement :: Parser Statement

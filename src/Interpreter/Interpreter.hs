@@ -24,7 +24,6 @@ interpret sd sa = (a, popFinalScopeData b, c)
       foldl
         ( \(io, sd', rt) s -> do
             let (io', sd'', rt') = statementIn sd' s
-            -- trace (show (sd', rt) ++ "\n") (mergeIO io io', sd'', fromMaybe rt rt')
             (mergeIO io io', sd'', fromMaybe rt rt')
         )
         (pure (), sd, Void)
@@ -76,16 +75,16 @@ evalFunArgs e sd =
     (pure (), sd, [])
     e
 
-run :: ScopeData -> [(String, DataType)] -> Name -> [P.Statement] -> RetData
-run sd vars name s = do
+run :: ScopeData -> (ScopeData -> (String, DataType) -> ScopeData) -> [(String, DataType)] -> Name -> [P.Statement] -> RetData
+run sd f vars name s = do
   let sd' = calcFunScope sd $ FunData (traceScope sd ++ [name]) [] Void []
-  let sd'' = foldl addVar sd' vars
+  let sd'' = foldl f sd' vars
   let (io, sd''', ret) = interpret sd'' s
   (io, mergeScopeData sd sd''', ret)
 
-runAndMerge :: RetData -> [(String, DataType)] -> Name -> (DataType -> DataType -> DataType) -> [P.Statement] -> RetData
-runAndMerge (io, sd, ret) vars name f s = do
-  let (io', sd', ret') = run sd vars name s
+runAndMerge :: RetData -> (ScopeData -> (String, DataType) -> ScopeData) -> [(String, DataType)] -> Name -> (DataType -> DataType -> DataType) -> [P.Statement] -> RetData
+runAndMerge (io, sd, ret) varf vars name f s = do
+  let (io', sd', ret') = run sd varf vars name s
   (mergeIO io io', sd', f ret ret')
 
 -- Evaluates an expression. Expressions can include a call to a function,
@@ -108,7 +107,7 @@ evalSymbolCall (n, c) d = do
     then throw $ MismatchedParameterException $ "Incorrect parameter types in: " ++ show (funNs fdata) ++ " given."
     else case fdata of
       FunData ns av rtype code ->
-        runAndMerge (io, d', Void) (zip (fst <$> av) argVals) (last $ funNs fdata) const code
+        runAndMerge (io, d', Void) addVar (zip (fst <$> av) argVals) (last $ funNs fdata) const code
       BuiltIn fn input output -> do
         let (io', d'', retVal) = call fdata argVals d'
         (mergeIO io io', d'', retVal)
@@ -155,18 +154,28 @@ evalConditional (P.IfCond arg code next) sd =
     case ret of
       Boolean (Just v) ->
         if v
-          then runAndMerge (io, sd', ret) [] "if/else if" const code
+          then runAndMerge (io, sd', ret) addVar [] "if/else if" const code
           else evalConditional next sd'
       v -> throw $ InvalidBooleanException $ "Invalid boolean expression given to if statement. Expressions returned: " ++ show v ++ "."
-evalConditional (P.ElseCond code) sd = run sd [] "else" code
+evalConditional (P.ElseCond code) sd = run sd addVar [] "else" code
 
 evalLoop :: P.Repeating -> ScopeData -> RetData
-evalLoop (P.For dec cond inc content) sd = undefined
-evalLoop (P.While e content) sd
-    = case evalExpr e sd of
-        (io, sd', Boolean (Just True)) -> do
-            let (io', sd'', _) = run sd' [] "whileLoop" content
-            let (io'', sd''', ret) = evalLoop (P.While e content) sd''
-            (mergeIO (mergeIO io io') io'', sd''', ret)
-        (io, sd', Boolean (Just False)) -> (pure (), sd, Void)
-        _ -> throw $ InvalidBooleanException "Expected boolean in argument to while loop."
+evalLoop (P.For var cond inc content) sd = undefined
+  -- case evalExpr cond sd' of
+  --   (io'', sd'', Boolean (Just True)) -> do
+  --     let (io''', sd''', _) = run sd'' addVar [] "forLoop" content
+  --     let (io'''', sd'''', _) = evalExpr inc sd'''
+  --     let (io''''', sd''''', _) = evalLoop (P.For var cond inc content) sd''''
+  --     (foldl (flip mergeIO) io' [io'', io''', io'''', io'''''], sd''''', Void)
+  --   (io'', sd'', Boolean (Just False)) -> (pure (), sd, Void)
+  --   _ -> throw $ InvalidBooleanException "Expected boolean in argument to for loop."
+  -- where
+  --   (io', sd', _) = statementIn sd (P.VD var)
+evalLoop (P.While e content) sd =
+  case evalExpr e sd of
+    (io, sd', Boolean (Just True)) -> do
+      let (io', sd'', _) = run sd' addVar [] "whileLoop" content
+      let (io'', sd''', _) = evalLoop (P.While e content) sd''
+      (mergeIO (mergeIO io io') io'', sd''', Void)
+    (io, sd', Boolean (Just False)) -> (pure (), sd, Void)
+    _ -> throw $ InvalidBooleanException "Expected boolean in argument to while loop."

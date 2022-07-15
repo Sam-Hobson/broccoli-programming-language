@@ -19,4 +19,4 @@ fun fizzbuzz(Int y): Void {
     };
 };
 
-fizzbuzz(100);
+fizzbuzz(100000);
