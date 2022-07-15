@@ -40,10 +40,35 @@ ret = tok (string "return") >> (expr ||| pure None)
 comment :: Parser String
 comment = surround "/*" (list $ noneof "*") "*/"
 
+
+while :: Parser Repeating
+while = do
+    tok $ string "while"
+    r <- tok $ surround "(" expr ")"
+    c <- tok $ surround "{" codeModule "}"
+    pure $ While r c
+
+for :: Parser Repeating
+for = do
+    tok $ string "for"
+    (dec, cond, inc) <- tok $ surround "(" p ")"
+    c <- tok $ surround "{" codeModule "}"
+    pure $ For dec cond inc c
+    where
+        p = do
+            a <- tok varDeclaration
+            tok $ string ","
+            b <- tok expr
+            tok $ string ","
+            c <- tok expr
+            pure (a, b, c)
+
 statement :: Parser Statement
 statement =
     (comment >> (statement ||| pure Empty))
     ||| (Ret <$> ret)
+    ||| (Loop <$> while)
+    ||| (Loop <$> for)
     ||| (Cond <$> conditionalIf)
     ||| (FD <$> function)
     ||| (FC <$> functionCall)

@@ -4,7 +4,7 @@ import BasicParserFuncs
 import ExprLexer ( expr )
 import Parser
 import SyntaxParserFuncs ( typeToken, idToken )
-import ParseTypes ( Var(..), Expr(..), Assignment)
+import ParseTypes
 
 -- Parses the assignment. This is everything including and beyond
 -- the equals sign.
@@ -22,7 +22,7 @@ assignmentToken =
 --
 -- >>> parse varDeclaration "x: int"
 -- <Parsed: Var {tokenId = "x", dataType = PInt, value = None}> <Remaining: "">
-varDeclaration :: Parser Var
+varDeclaration :: Parser Declaration
 varDeclaration = do
   whitespace
   a <- tok typeToken

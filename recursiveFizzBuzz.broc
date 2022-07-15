@@ -19,33 +19,9 @@ fizzbuzz(100); */
 
 
 
-/* fun x(y: int): void {
-    printI(y);
-    x(y + 1);
+Int x = 3;
+
+while (x < 10) {
+    printI(x);
+    x = x + 1;
 };
-
-x(0); */
-
-
-/* Should see "True False" */
-Bool x = False;
-
-fun dog(): Void {
-    Bool x = True;
-    printB(x);
-};
-
-dog();
-printB(x);
-
-/* Should see "True True" */
-Bool x = False;
-
-fun dog(): Void {
-    x = True;
-    printB(x);
-};
-
-dog();
-printB(x);
-

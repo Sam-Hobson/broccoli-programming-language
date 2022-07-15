@@ -41,6 +41,11 @@ data Expr
   | None
   deriving (Show, Eq)
 
+data Repeating
+  =  For Declaration Expr Expr [Statement]
+  |  While Expr [Statement]
+  deriving (Show, Eq)
+
 data Conditional
   = IfCond Expr [Statement] Conditional
   | ElseCond [Statement]
@@ -56,16 +61,17 @@ data Type
 
 type Assignment = (String, Expr)
 
-type Var = (String, Type, Expr)
+type Declaration = (String, Type, Expr)
 
-type Function = (String, [Var], Type, [Statement])
+type Function = (String, [Declaration], Type, [Statement])
 
 data Statement
   = FD Function
   | FC FunctionData
-  | VD Var
+  | VD Declaration
   | VA Assignment
   | Ret Expr
   | Cond Conditional
+  | Loop Repeating
   | Empty
   deriving (Show, Eq)

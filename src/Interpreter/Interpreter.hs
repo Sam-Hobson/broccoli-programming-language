@@ -38,6 +38,7 @@ statementIn sd (P.VD (s, t, e)) = addLast (insertVar sd (s, mapPTypes t, e) addV
 statementIn sd (P.VA (s, e)) = addLast (insertVar sd (s, varLookup s sd, e) assignVar) Nothing
 statementIn sd (P.Ret r) = Just <$> evalExpr r sd
 statementIn sd (P.Cond c) = Nothing <$ evalConditional c sd
+statementIn sd (P.Loop l) = Nothing <$ evalLoop l sd
 statementIn sd P.Empty = (pure (), sd, Nothing)
 
 insertVar :: ScopeData -> (String, DataType, Expr) -> (ScopeData -> (String, DataType) -> ScopeData) -> (IO (), ScopeData)
@@ -52,7 +53,7 @@ insertVar sd (s, dt, e) f = do
 declareFun :: ScopeData -> P.Function -> ScopeData
 declareFun sd (a, b, c, d) = addFun sd (a, FunData (traceScope sd ++ [a]) (argDefinition <$> b) (mapPTypes c) d)
 
-argDefinition :: P.Var -> (String, DataType)
+argDefinition :: P.Declaration -> (String, DataType)
 argDefinition (s, t, e) = (s, f $ evalPrimitiveExpr e)
   where
     f Void = mapPTypes t
@@ -158,3 +159,14 @@ evalConditional (P.IfCond arg code next) sd =
           else evalConditional next sd'
       v -> throw $ InvalidBooleanException $ "Invalid boolean expression given to if statement. Expressions returned: " ++ show v ++ "."
 evalConditional (P.ElseCond code) sd = run sd [] "else" code
+
+evalLoop :: P.Repeating -> ScopeData -> RetData
+evalLoop (P.For dec cond inc content) sd = undefined
+evalLoop (P.While e content) sd
+    = case evalExpr e sd of
+        (io, sd', Boolean (Just True)) -> do
+            let (io', sd'', _) = run sd' [] "whileLoop" content
+            let (io'', sd''', ret) = evalLoop (P.While e content) sd''
+            (mergeIO (mergeIO io io') io'', sd''', ret)
+        (io, sd', Boolean (Just False)) -> (pure (), sd, Void)
+        _ -> throw $ InvalidBooleanException "Expected boolean in argument to while loop."
