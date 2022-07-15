@@ -1,27 +1,22 @@
-/* fun fizzbuzz(x: int): void {
-    if (x > 0) {
-        output: string = "";
-        if ((x % 3) == 0) {
-            output: string = output + "Fizz";
-        };
-        if ((x % 5) == 0) {
-            output: string = output + "Buzz";
-        };
-        if (output != "") {
-            print(x + ": " + output + "!");
-        };
+fun fizzbuzz(Int y): Void {
+    if (y > 0) {
+        Int x = 1;
+        while (x <= y) {
+            String res = x + ": ";
+            if ((x % 3) == 0) {
+                res = res + "Fizz";
+            };
+            if ((x % 5) == 0) {
+                res = res + "Buzz";
+            };
+            if (res != (x + ": ")) {
+                res = res + "!";
+                print(res);
+            };
 
-        fizzbuzz(x - 1);
+            x = x + 1;
+        };
     };
 };
 
-fizzbuzz(100); */
-
-
-
-Int x = 3;
-
-while (x < 10) {
-    printI(x);
-    x = x + 1;
-};
+fizzbuzz(100);
