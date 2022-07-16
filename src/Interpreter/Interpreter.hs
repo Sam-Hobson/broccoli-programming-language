@@ -107,7 +107,7 @@ evalSymbolCall (n, c) d = do
     then throw $ MismatchedParameterException $ "Incorrect parameter types in: " ++ show (funNs fdata) ++ " given."
     else case fdata of
       FunData ns av rtype code ->
-        runAndMerge (io, d', Void) addVar (zip (fst <$> av) argVals) (last $ funNs fdata) const code
+        runAndMerge (io, d', Void) addVar (zip (fst <$> av) argVals) (last $ funNs fdata) (const id) code
       BuiltIn fn input output -> do
         let (io', d'', retVal) = call fdata argVals d'
         (mergeIO io io', d'', retVal)
@@ -160,17 +160,22 @@ evalConditional (P.IfCond arg code next) sd =
 evalConditional (P.ElseCond code) sd = run sd addVar [] "else" code
 
 evalLoop :: P.Repeating -> ScopeData -> RetData
-evalLoop (P.For var cond inc content) sd = undefined
-  -- case evalExpr cond sd' of
-  --   (io'', sd'', Boolean (Just True)) -> do
-  --     let (io''', sd''', _) = run sd'' addVar [] "forLoop" content
-  --     let (io'''', sd'''', _) = evalExpr inc sd'''
-  --     let (io''''', sd''''', _) = evalLoop (P.For var cond inc content) sd''''
-  --     (foldl (flip mergeIO) io' [io'', io''', io'''', io'''''], sd''''', Void)
-  --   (io'', sd'', Boolean (Just False)) -> (pure (), sd, Void)
-  --   _ -> throw $ InvalidBooleanException "Expected boolean in argument to for loop."
-  -- where
-  --   (io', sd', _) = statementIn sd (P.VD var)
+evalLoop (P.For dec comp op c) d = (mergeIO io x, y, z)
+  where
+    (io, sd, _) = statementIn d (P.VD dec)
+    (x, y, z) = evalLoop' sd
+    evalLoop' sd' =
+      case evalCompOp comp sd' of
+        (io'', sd'', Boolean (Just True)) -> do
+          let (io''', sd''', _) = run sd'' addVar [] "forLoop" c
+          let (io'''', sd'''', _) = statementIn sd''' (P.VA op)
+          let (io''''', sd''''', _) = evalLoop' sd''''
+          let fio = foldl mergeIO io'' [io''', io'''', io''''']
+          let fsd = foldl mergeScopeData sd' [sd''', sd'''', sd''''']
+          (fio, fsd, Void)
+        (io', sd', Boolean (Just False)) -> (pure (), sd', Void)
+        _ -> throw $ InvalidBooleanException "Expected boolean in argument to for loop."
+
 evalLoop (P.While e content) sd =
   case evalExpr e sd of
     (io, sd', Boolean (Just True)) -> do

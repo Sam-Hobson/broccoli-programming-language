@@ -1,4 +1,4 @@
-fun fizzbuzz(Int y): Void {
+/* fun fizzbuzz(Int y): Void {
     if (y > 0) {
         Int x = 1;
         while (x <= y) {
@@ -19,4 +19,19 @@ fun fizzbuzz(Int y): Void {
     };
 };
 
-fizzbuzz(100000);
+fizzbuzz(100000); */
+
+
+fun dog(): Int {
+    print("Dog");
+    return 0;
+};
+
+fun cat(Int x): Int {
+    print("Cat");
+    return x;
+};
+
+for (Int i = dog(), i < 10, i = cat(i) + 1) {
+    printI(i);
+};
