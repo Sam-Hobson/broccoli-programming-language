@@ -1,37 +1,16 @@
-/* fun fizzbuzz(Int y): Void {
-    if (y > 0) {
-        Int x = 1;
-        while (x <= y) {
-            String res = x + ": ";
-            if ((x % 3) == 0) {
-                res = res + "Fizz";
-            };
-            if ((x % 5) == 0) {
-                res = res + "Buzz";
-            };
-            if (res != (x + ": ")) {
-                res = res + "!";
-                print(res);
-            };
-
-            x = x + 1;
+fun fizzbuzz(Int x): Void {
+    for (Int y = 0, y < x, y = y + 1) {
+        String res = "";
+        if ((y % 3) == 0) {
+            res = res + "Fizz";
         };
+        if ((y % 5) == 0) {
+            res = res + "Buzz";
+        };
+        if (res != "") {
+            print(y + ": " + res + "!");
+        }
     };
 };
 
-fizzbuzz(100000); */
-
-
-fun dog(): Int {
-    print("Dog");
-    return 0;
-};
-
-fun cat(Int x): Int {
-    print("Cat");
-    return x;
-};
-
-for (Int i = dog(), i < 10, i = cat(i) + 1) {
-    printI(i);
-};
+fizzbuzz(1000000);
