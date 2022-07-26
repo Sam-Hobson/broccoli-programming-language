@@ -17,6 +17,9 @@ import qualified ParseTypes as P
 import ScopeFuncs
 import UsefulFuncs
 
+-- This is the main function for interpreting a set of statements.
+-- This function may be called recursively for embedded sets of statements
+-- (eg. within functions or loops).
 interpret :: ScopeData -> [P.Statement] -> RetData
 interpret sd sa = (a, popFinalScopeData b, c)
   where
@@ -29,7 +32,8 @@ interpret sd sa = (a, popFinalScopeData b, c)
         (pure (), sd, Void)
         sa
 
--- TODO: Incomplete
+-- This will take a single statement and apply an appropriate action. It will also return
+-- the datatype returned from the action.
 statementIn :: ScopeData -> P.Statement -> (IO (), ScopeData, Maybe DataType)
 statementIn sd (P.FD s) = (pure (), declareFun sd s, Nothing)
 statementIn sd (P.FC s) = Nothing <$ evalExpr (P.SymbolCall s) sd
@@ -40,6 +44,8 @@ statementIn sd (P.Cond c) = Nothing <$ evalConditional c sd
 statementIn sd (P.Loop l) = Nothing <$ evalLoop l sd
 statementIn sd P.Empty = (pure (), sd, Nothing)
 
+-- This will evaluate a variable and either assign the variable, or declare it. This function
+-- will return any impurities from the action, and the scopeData with the defined variable.
 insertVar :: ScopeData -> (String, DataType, Expr) -> (ScopeData -> (String, DataType) -> ScopeData) -> (IO (), ScopeData)
 insertVar sd (s, dt, e) f = do
   let (io, sd', dt') = evalExpr e sd
@@ -49,15 +55,18 @@ insertVar sd (s, dt, e) f = do
       let sd'' = f sd' (s, dt')
       (io, sd'')
 
+-- This will declare a function.
 declareFun :: ScopeData -> P.Function -> ScopeData
 declareFun sd (a, b, c, d) = addFun sd (a, FunData (traceScope sd ++ [a]) (argDefinition <$> b) (mapPTypes c) d)
 
+-- Evaluates an argument and returns its name and value.
 argDefinition :: P.Declaration -> (String, DataType)
 argDefinition (s, t, e) = (s, f $ evalPrimitiveExpr e)
   where
     f Void = mapPTypes t
     f a = a
 
+-- Evaluates primitive data types.
 evalPrimitiveExpr :: P.Expr -> DataType
 evalPrimitiveExpr P.None = Void
 evalPrimitiveExpr (P.Number i) = Int $ Just i
@@ -65,6 +74,8 @@ evalPrimitiveExpr (P.String s) = String $ Just s
 evalPrimitiveExpr (P.Boolean b) = Boolean $ Just b
 evalPrimitiveExpr a = throw $ ExpectedPrimitiveTypeException $ "Expected primitive type. " ++ show a ++ " provided instead."
 
+-- Evaluates function arguments. This will take a list of expressions representing function args,
+-- and will return a list of corresponding DataTypes.
 evalFunArgs :: [P.Expr] -> ScopeData -> (IO (), ScopeData, [DataType])
 evalFunArgs e sd =
   foldl
@@ -175,7 +186,6 @@ evalLoop (P.For dec comp op c) d = (mergeIO io x, y, z)
           (fio, fsd, Void)
         (io', sd', Boolean (Just False)) -> (pure (), sd', Void)
         _ -> throw $ InvalidBooleanException "Expected boolean in argument to for loop."
-
 evalLoop (P.While e content) sd =
   case evalExpr e sd of
     (io, sd', Boolean (Just True)) -> do

@@ -1,5 +1,5 @@
 fun fizzbuzz(Int x): Void {
-    for (Int y = 0, y < x, y = y + 1) {
+    for (Int y = 1, y < x, y = y + 1) {
         String res = "";
         if ((y % 3) == 0) {
             res = res + "Fizz";
@@ -13,4 +13,5 @@ fun fizzbuzz(Int x): Void {
     };
 };
 
-fizzbuzz(1000000);
+fizzbuzz(2000000);
+

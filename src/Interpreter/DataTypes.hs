@@ -16,6 +16,7 @@ data DataType
   | String (Maybe String)
   | Boolean (Maybe Bool)
   | Void
+  | NoRet
   deriving
     (Show, Eq, Data)
 
